@@ -20,12 +20,20 @@ struct SwiftLogFileCloudConfig {
 class SwfitLogFileCloudManager {
     
     typealias LogHandlerFactory = (String) -> LogHandler
+    static var swiftLogFireCloud: SwiftLogFireCloud?
     
     func makeLogHandlerFactory(config: SwiftLogFileCloudConfig) -> LogHandlerFactory {
         func makeLogHandler(label: String) -> LogHandler {
-            return SwiftLogFireCloud(label: label, config: config)
+            SwfitLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
+            return SwfitLogFileCloudManager.swiftLogFireCloud!
         }
         return makeLogHandler
+    }
+    
+    //ISSUE: is this a hack?  adding all the logger extensions to the manager statically?
+    public static func flushLogToCloudNow() {
+        print("Flushing to cloud from the SwiftLogCloudManager")
+        swiftLogFireCloud?.flushLogToCloudNow()
     }
 }
 class SwiftLogFireCloud : LogHandler {
@@ -59,5 +67,20 @@ class SwiftLogFireCloud : LogHandler {
     var metadata: Logger.Metadata = .init()
     
     var logLevel: Logger.Level = .info
+    
+    func flushLogToCloudNow() {
+        //ISSUE:  this method is not part of the protocol, so its inaccessible to the client.
+        print("Flushing log to cloud from logHandler")
+    }
+}
+
+extension Logger {
+    func flushLogToCloudNow()  {
+
+        print("Flushing log to cloud from Logger extension")
+        //ISSUE:  this is vislble to the client, but it can't access the handler for it to flush
+        //let handler = self.handler as? SwiftLogFireCloud
+        //Compiler error: 'handler' is inaccessible due to 'internal' protection level
+    }
     
 }
