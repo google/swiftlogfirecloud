@@ -8,12 +8,14 @@ struct SwiftLogFileCloudConfig {
     let logToCloud                  : Bool?
     let localFileBufferSize         : Int?
     let localFileBufferWriteInterval: TimeInterval?
+    let uniqueIDString              : String?
     //let storage                   : Storage  //This is a Firebase object.  I don't want the library to depend on firebase, rather want to receive it from the library client.
     
-    init(logToCloud: Bool? = nil, localFileBufferSize: Int? = nil, localFileBufferWriteInterval: TimeInterval? = nil) {
+    init(logToCloud: Bool? = nil, localFileBufferSize: Int? = nil, localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil) {
         self.logToCloud = logToCloud
         self.localFileBufferSize = localFileBufferSize
         self.localFileBufferWriteInterval = localFileBufferWriteInterval
+        self.uniqueIDString = uniqueID
     }
 }
 
@@ -40,19 +42,51 @@ class SwiftLogFireCloud : LogHandler {
 
     private var label: String
     private var config: SwiftLogFileCloudConfig
+    private var localFileLogManager: LocalLogFileManager
+    private var logMessageDateFormatter = DateFormatter()
+    private var logHandlerSerialQueue: DispatchQueue
     
     init(label: String, config: SwiftLogFileCloudConfig) {
         self.label = label
         self.config = config
+        logMessageDateFormatter.timeZone = TimeZone.current
+        logMessageDateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss.SSSZ'"
+        localFileLogManager = LocalLogFileManager(clientDeviceID: config.uniqueIDString)
+        logHandlerSerialQueue = DispatchQueue(label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)
+    }
+    
+    private func isRunningUnderDebugger() -> Bool {
+        // https://stackoverflow.com/questions/33177182/detect-if-swift-app-is-being-run-from-xcode
+        var info = kinfo_proc()
+        var mib : [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        var size = MemoryLayout<kinfo_proc>.stride
+        let junk = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
+        assert(junk == 0, "sysctl failed")
+        return (info.kp_proc.p_flag & P_TRACED) != 0
     }
     
     func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: String, function: String, line: UInt) {
+        logHandlerSerialQueue.async {
 
-        var metadataString: String = ""
-        if let metadata = metadata {
-            metadataString = !metadata.isEmpty ? metadata.map { "\($0)=\($1)"}.joined(separator: " ") : ""
+            var metadataString: String = ""
+            let dateString = self.logMessageDateFormatter.string(from: Date())
+            if let metadata = metadata {
+                metadataString = !metadata.isEmpty ? metadata.map { "\($0)=\($1)"}.joined(separator: " ") : ""
+            }
+            let logmsg = "\(dateString) \(metadataString) \(level): \(message.description)"
+            
+            if self.config.logToCloud == true {
+                self.localFileLogManager.log(msg: logmsg)
+            }
+            
+            var printToConsole = self.isRunningUnderDebugger()
+            #if targetEnvironment(simulator)
+               printToConsole = true
+            #endif
+            if printToConsole {
+                print("\(logmsg)")
+            }
         }
-        print("\(metadataString) \(level): \(message.description)")
     }
     
     subscript(metadataKey key: String) -> Logger.Metadata.Value? {
