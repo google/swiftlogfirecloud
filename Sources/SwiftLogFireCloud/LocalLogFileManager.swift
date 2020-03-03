@@ -24,9 +24,10 @@ class LocalLogFileManager {
     }
     
     private struct LocalLogFile {
-        var buffer: String = ""
+        var buffer: Data = Data()
         var fileURL: URL?
         var bufferWriteSize: Int
+        let bufferSizeToGiveUp: Int
         var bytesWritten: Int = 0
         var firstFileWrite: Date?
         var lastFileWrite: Date?
@@ -67,6 +68,7 @@ class LocalLogFileManager {
         
         init(bufferWriteSize: Int = 1048576) {
             self.bufferWriteSize = bufferWriteSize
+            self.bufferSizeToGiveUp = 4 * bufferWriteSize
             #if targetEnvironment(simulator)
                 self.bufferWriteSize = 1024 * 16
             #endif
@@ -187,15 +189,14 @@ class LocalLogFileManager {
         createLocalLogDirectory()
          
         guard let fileURL = localLogFile.fileURL else { return }
-        guard let logData = localLogFile.buffer.data(using: .utf8) else { return }
     
         if FileManager.default.fileExists(atPath: fileURL.path) {  // append to the file
             do {
                 let fileHandle = try FileHandle(forUpdating: fileURL)
                 fileHandle.seekToEndOfFile()
-                fileHandle.write(logData)
+                fileHandle.write(localLogFile.buffer)
                 localLogFile.bytesWritten += localLogFile.buffer.count
-                localLogFile.buffer = ""
+                localLogFile.buffer = Data()
                 localLogFile.lastFileWrite = Date()
                 localLogFile.successiveWriteFailures = 0
                  
@@ -221,9 +222,9 @@ class LocalLogFileManager {
             }
         } else { // first write to file
             do {
-                try localLogFile.buffer.write(to: fileURL, atomically: true, encoding: .utf8)
+                try localLogFile.buffer.write(to: fileURL)
                 localLogFile.bytesWritten += localLogFile.buffer.count
-                localLogFile.buffer = ""
+                localLogFile.buffer = Data()
                 localLogFile.lastFileWrite = Date()
                 localLogFile.successiveWriteFailures = 0
             } catch {
@@ -323,7 +324,7 @@ class LocalLogFileManager {
      
     private func trimBufferIfNecessary() {
         // if the buffer size is 4x the size of when it should write, abandon the log and start over.
-        if localLogFile.buffer.count >= localLogFile.bufferWriteSize * 4 {
+        if localLogFile.buffer.count >= localLogFile.bufferSizeToGiveUp {
             localLogFile = LocalLogFile() // reset
             // if you're abandoing the local file because writes are failing, delete local files as well
             // if logging to cloud, it should take care of the deletes.
@@ -338,7 +339,8 @@ class LocalLogFileManager {
     
     func log(msg: String) {
         localLogQueue.async {
-            self.localLogFile.buffer += "\(msg)\n"
+            guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
+            self.localLogFile.buffer.append(msgData)
             
             if self.isNowTheRightTimeToWriteLogToLocalFile() {
                 self.writeLogFileToDisk()
