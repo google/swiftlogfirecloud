@@ -137,12 +137,17 @@ class LocalLogFileManager {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         
         let pathURL =  paths[0].appendingPathComponent(self.localLogDirectoryName)
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: pathURL, includingPropertiesForKeys: nil)
-            return files.filter { $0.pathExtension == "log"}
-        } catch {
-            return []
+        
+        var isDir: ObjCBool = false
+        if FileManager.default.fileExists(atPath: pathURL.path, isDirectory: &isDir) && isDir.boolValue {
+            do {
+                let files = try FileManager.default.contentsOfDirectory(at: pathURL, includingPropertiesForKeys: nil)
+                return files.filter { $0.pathExtension == "log"}
+            } catch {
+                // do nothing, don't care.
+            }
         }
+        return []
     }
     
     private func createLogFileURL() -> URL {
