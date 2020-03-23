@@ -1,4 +1,4 @@
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
 #endif
 
@@ -66,9 +66,20 @@ class LocalLogFileManager {
             return fileString.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)! //TODO this shoudl always escape, but be better here
         }
         
-        init(bufferWriteSize: Int = 1048576) {
+        fileprivate func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?) -> URL {
+            let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            
+            if localLogDirectoryName.count != 0 {
+                return paths[0].appendingPathComponent(localLogDirectoryName).appendingPathComponent(createLogFileName(deviceId: clientDeviceID))
+            } else {
+                return paths[0].appendingPathComponent(createLogFileName(deviceId: clientDeviceID))
+            }
+        }
+        
+        init(bufferWriteSize: Int = 1048576, localLogDirectoryName: String, clientDeviceID: String?) {
             self.bufferWriteSize = bufferWriteSize
             self.bufferSizeToGiveUp = 4 * bufferWriteSize
+            self.fileURL = createLogFileURL(localLogDirectoryName: localLogDirectoryName, clientDeviceID: clientDeviceID)
             #if targetEnvironment(simulator)
                 self.bufferWriteSize = 1024 * 16
             #endif
@@ -82,7 +93,7 @@ class LocalLogFileManager {
         self.logToCloud = logToCloud
         
         //TODO:  make this an optional, if logToCloud is false we'll still have a LocalLogFile manager to clean up previous runs, but the localLogFile can be nil
-        self.localLogFile = LocalLogFile()
+        self.localLogFile = LocalLogFile(localLogDirectoryName: localLogDirectoryName, clientDeviceID: clientDeviceID)
         
         writeTimer = Timer.scheduledTimer(timeInterval: writeTimeInterval, target: self, selector: #selector(timedAtemptToWriteToDisk), userInfo: nil, repeats: true)
         
@@ -145,16 +156,6 @@ class LocalLogFileManager {
         }
     }
     
-    private func createLogFileURL() -> URL {
-        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        
-        if localLogDirectoryName.count != 0 {
-            return paths[0].appendingPathComponent(localLogDirectoryName).appendingPathComponent(localLogFile.createLogFileName(deviceId: clientDeviceID))
-        } else {
-            return paths[0].appendingPathComponent(localLogFile.createLogFileName(deviceId: clientDeviceID))
-        }
-    }
-    
     @objc private func processStrandedFilesAtStartup() {
         localLogQueue.async {
             for fileURL in self.retrieveLocalLogFileListOnDisk() where fileURL != self.localLogFile.fileURL {
@@ -181,11 +182,6 @@ class LocalLogFileManager {
          
         localLogFile.lastFileWriteAttempt = Date()
          
-        if localLogFile.fileURL == nil {
-            localLogFile.fileURL = createLogFileURL()
-            localLogFile.firstFileWrite = Date()
-        }
-         
         createLocalLogDirectory()
          
         guard let fileURL = localLogFile.fileURL else { return }
@@ -210,7 +206,7 @@ class LocalLogFileManager {
 //
 //                    }
 //                    writeLogFileToCloud(logFile: localLogFile)
-                    localLogFile = LocalLogFile()
+                    localLogFile = LocalLogFile(localLogDirectoryName: localLogDirectoryName, clientDeviceID: clientDeviceID)
                     localLogFile.lastFileWrite = Date()
 //                } else {
 //                    if #available(iOS 13.0, *) {
@@ -290,7 +286,7 @@ class LocalLogFileManager {
         let bufferIsBiggerThanWritableSize = localLogFile.buffer.count > Int(Double(localLogFile.bufferWriteSize) * localFileWriteToPushFactor)
         //let bufferIsBeggerThanMaximumSize = localLogFile.buffer.count > 4 * localLogFile.bufferWriteSize
          
-        var acceptableRetryInterval: Double
+        let acceptableRetryInterval: Double
         switch localLogability {
         case .normal: acceptableRetryInterval = 60.0
         case .impaired: acceptableRetryInterval = 180.0
@@ -325,7 +321,7 @@ class LocalLogFileManager {
     private func trimBufferIfNecessary() {
         // if the buffer size is 4x the size of when it should write, abandon the log and start over.
         if localLogFile.buffer.count >= localLogFile.bufferSizeToGiveUp {
-            localLogFile = LocalLogFile() // reset
+            localLogFile = LocalLogFile(localLogDirectoryName: localLogDirectoryName, clientDeviceID: clientDeviceID) // reset
             // if you're abandoing the local file because writes are failing, delete local files as well
             // if logging to cloud, it should take care of the deletes.
             if !logToCloud || !logToCloudOnSimulator {
