@@ -5,11 +5,12 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     var locaLogFileManager: LocalLogFileManager?
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    let testingLogFileDirectoryName = "TestLogs"
     
     private func removeLogDirectory() {
         XCTAssert(paths.count > 0)
         var documentsDirectory = paths[0]
-        documentsDirectory.appendPathComponent("Logs")
+        documentsDirectory.appendPathComponent(testingLogFileDirectoryName)
         
         var isDir: ObjCBool = false
         let logDirectoryExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
@@ -26,7 +27,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     
     private func writeDummyLogFile(fileName: String) -> URL {
         let data = "I am test data for a about to be deleted file".data(using: .utf8)
-        let fileURL = paths[0].appendingPathComponent("Logs").appendingPathComponent(fileName)
+        let fileURL = paths[0].appendingPathComponent(testingLogFileDirectoryName).appendingPathComponent(fileName)
         
         locaLogFileManager?.createLocalLogDirectory()
         do {
@@ -37,8 +38,24 @@ final class LocalLogFileManagerTests: XCTestCase {
         return fileURL
     }
     
+    private func isLogFileDirectoryEmpty() -> Bool {
+        return logFileDirectoryFileCount() == 0
+    }
+    
+    private func logFileDirectoryFileCount() -> Int {
+        let pathURL =  paths[0].appendingPathComponent(testingLogFileDirectoryName)
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: pathURL, includingPropertiesForKeys: nil)
+            return files.count
+        } catch {
+
+        }
+        XCTFail()
+        return 0
+    }
+    
     override func setUp() {
-        locaLogFileManager = LocalLogFileManager(clientDeviceID: "TestClientID", logToCloud: false, bufferWriteSize: 100, logFileDirectoryName: "Logs", writeTimeInterval: 60)
+        locaLogFileManager = LocalLogFileManager(clientDeviceID: "TestClientID", logToCloud: false, bufferWriteSize: 100, logFileDirectoryName: testingLogFileDirectoryName, writeTimeInterval: 60)
         removeLogDirectory()
 
     }
@@ -56,7 +73,7 @@ final class LocalLogFileManagerTests: XCTestCase {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         XCTAssert(paths.count > 0)
         var documentsDirectory = paths[0]
-        documentsDirectory.appendPathComponent("Logs")
+        documentsDirectory.appendPathComponent(testingLogFileDirectoryName)
         
         var isDir: ObjCBool = false
         let logDirectoryExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
@@ -102,10 +119,28 @@ final class LocalLogFileManagerTests: XCTestCase {
         XCTAssert(urls.count == 2)
     }
     
+    func testProcessStrandedFilesAtStartup() {
+        
+        guard let locaLogFileManager = locaLogFileManager else { XCTFail(); return }
+        
+        _ = writeDummyLogFile(fileName: "TestLogFileName1.log")
+        _ = writeDummyLogFile(fileName: "TestLogFileName2.log")
+        
+        let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
+        
+        // the logger init is setup to not log to cloud, so it should just delete files.
+        locaLogFileManager.processStrandedFilesAtStartup {
+            XCTAssertTrue(self.isLogFileDirectoryEmpty())
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 5.0)
+    }
+    
     static var allTests = [
         ("testCreateLocalLogDirectorySuccessful", testCreateLocalLogDirectorySuccessful),
         ("testDeleteLocalLogFile", testDeleteLocalLogFile),
         ("testRetreieveLocalLogFileListOnDiskWhenEmpty", testRetreieveLocalLogFileListOnDiskWhenEmpty),
         ("testRetrieveLocalLogFileListOnDiskWhenNotEmpty", testRetrieveLocalLogFileListOnDiskWhenNotEmpty),
+        ("testProcessStrandedFilesAtStartup", testProcessStrandedFilesAtStartup),
     ]
 }

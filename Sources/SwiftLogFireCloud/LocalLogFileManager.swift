@@ -156,7 +156,7 @@ class LocalLogFileManager {
         }
     }
     
-    @objc private func processStrandedFilesAtStartup() {
+    @objc internal func processStrandedFilesAtStartup(_ completionForTesting: (()->Void)? = nil) {
         localLogQueue.async {
             for fileURL in self.retrieveLocalLogFileListOnDisk() where fileURL != self.localLogFile.fileURL {
                 if self.logToCloud {
@@ -165,6 +165,7 @@ class LocalLogFileManager {
                     self.deleteLocalFile(fileURL)
                 }
             }
+            completionForTesting?()
         }
     }
     
