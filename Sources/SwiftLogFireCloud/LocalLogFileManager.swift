@@ -123,7 +123,7 @@ class LocalLogFileManager {
         }
     }
     
-    private func createLocalLogDirectory() {
+    internal func createLocalLogDirectory() {
         guard localLogDirectoryName.count > 0 else { return }
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         
@@ -136,7 +136,7 @@ class LocalLogFileManager {
         }
     }
     
-    private func deleteLocalFile(fileURL: URL) {
+    internal func deleteLocalFile(_ fileURL: URL) {
         do {
             try FileManager.default.removeItem(at: fileURL)
         } catch {
@@ -144,7 +144,7 @@ class LocalLogFileManager {
         }
     }
     
-    private func retrieveLocalLogFileListOnDisk() -> [URL] {
+    internal func retrieveLocalLogFileListOnDisk() -> [URL] {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         
         let pathURL =  paths[0].appendingPathComponent(self.localLogDirectoryName)
@@ -162,7 +162,7 @@ class LocalLogFileManager {
                 if self.logToCloud {
                     //self.addFileToCloudPushQueue(localFileURL: fileURL)
                 } else {
-                    self.deleteLocalFile(fileURL: fileURL)
+                    self.deleteLocalFile(fileURL)
                 }
             }
         }
@@ -327,7 +327,7 @@ class LocalLogFileManager {
             if !logToCloud || !logToCloudOnSimulator {
                 let fileURLs = retrieveLocalLogFileListOnDisk()
                 for fileURL in fileURLs where fileURL != localLogFile.fileURL {
-                    deleteLocalFile(fileURL: fileURL)
+                    deleteLocalFile(fileURL)
                 }
             }
         }
