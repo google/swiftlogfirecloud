@@ -7,53 +7,6 @@ final class LocalLogFileManagerTests: XCTestCase {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     let testingLogFileDirectoryName = "TestLogs"
     
-    private func removeLogDirectory() {
-        XCTAssert(paths.count > 0)
-        var documentsDirectory = paths[0]
-        documentsDirectory.appendPathComponent(testingLogFileDirectoryName)
-        
-        var isDir: ObjCBool = false
-        let logDirectoryExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
-        
-        if logDirectoryExists {
-            do {
-                try FileManager.default.removeItem(at: documentsDirectory)
-            } catch {
-                XCTFail()
-            }
-
-        }
-    }
-    
-    private func writeDummyLogFile(fileName: String) -> URL {
-        let data = "I am test data for a about to be deleted file".data(using: .utf8)
-        let fileURL = paths[0].appendingPathComponent(testingLogFileDirectoryName).appendingPathComponent(fileName)
-        
-        locaLogFileManager?.createLocalLogDirectory()
-        do {
-            try data?.write(to: fileURL)
-        } catch {
-            XCTFail("Unable to write test file in testDeleteLocalLogFile")
-        }
-        return fileURL
-    }
-    
-    private func isLogFileDirectoryEmpty() -> Bool {
-        return logFileDirectoryFileCount() == 0
-    }
-    
-    private func logFileDirectoryFileCount() -> Int {
-        let pathURL =  paths[0].appendingPathComponent(testingLogFileDirectoryName)
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: pathURL, includingPropertiesForKeys: nil)
-            return files.count
-        } catch {
-
-        }
-        XCTFail()
-        return 0
-    }
-    
     override func setUp() {
         locaLogFileManager = LocalLogFileManager(clientDeviceID: "TestClientID", logToCloud: false, bufferWriteSize: 100, logFileDirectoryName: testingLogFileDirectoryName, writeTimeInterval: 60)
         removeLogDirectory()
