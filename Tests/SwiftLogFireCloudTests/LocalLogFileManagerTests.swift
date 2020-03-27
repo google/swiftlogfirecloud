@@ -8,7 +8,9 @@ final class LocalLogFileManagerTests: XCTestCase {
     let testingLogFileDirectoryName = "TestLogs"
     
     override func setUp() {
-        locaLogFileManager = LocalLogFileManager(clientDeviceID: "TestClientID", logToCloud: false, bufferWriteSize: 100, logFileDirectoryName: testingLogFileDirectoryName, writeTimeInterval: 60)
+        
+        let config = SwiftLogFileCloudConfig(logToCloud: false, localFileBufferSize: 100, localFileBufferWriteInterval: 60, uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: testingLogFileDirectoryName)
+        locaLogFileManager = LocalLogFileManager(config: config)
         removeLogDirectory()
 
     }
@@ -89,11 +91,22 @@ final class LocalLogFileManagerTests: XCTestCase {
         wait(for: [expectation], timeout: 5.0)
     }
     
+    func testIsFileSystemFreeSpaceSufficent() {
+        
+        guard let locaLogFileManager = locaLogFileManager else { XCTFail(); return }
+        guard let totalDiskSpaceInBytes = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory())[FileAttributeKey.systemFreeSize] as? Int64 else { XCTFail(); return}
+        
+        //because testing against actual file system, am not sure how create the negative condition here.
+        XCTAssert((totalDiskSpaceInBytes > 20 * 1048576 && locaLogFileManager.isFileSystemFreeSpaceSufficient()) ||
+            (totalDiskSpaceInBytes < 20 * 1048576 && !locaLogFileManager.isFileSystemFreeSpaceSufficient()))
+    }
+    
     static var allTests = [
         ("testCreateLocalLogDirectorySuccessful", testCreateLocalLogDirectorySuccessful),
         ("testDeleteLocalLogFile", testDeleteLocalLogFile),
         ("testRetreieveLocalLogFileListOnDiskWhenEmpty", testRetreieveLocalLogFileListOnDiskWhenEmpty),
         ("testRetrieveLocalLogFileListOnDiskWhenNotEmpty", testRetrieveLocalLogFileListOnDiskWhenNotEmpty),
         ("testProcessStrandedFilesAtStartup", testProcessStrandedFilesAtStartup),
+        ("testIsFileSystemFreeSpaceSufficent", testIsFileSystemFreeSpaceSufficent),
     ]
 }
