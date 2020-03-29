@@ -2,16 +2,17 @@
 import UIKit
 #endif
 
-class LocalLogFileManager {
+internal class LocalLogFileManager {
     
     private var config: SwiftLogFileCloudConfig
-    private var localLogFile: LocalLogFile
+    internal var localLogFile: LocalLogFile
 
     private var logToCloudOnSimulator = true // set only when testing the library only.
     private let localLogQueue = DispatchQueue(label: "com.leisurehoundsports.swiftfirelogcloud-local", qos: .background)
     private var localLogability: Logability = .normal
-    private var writeTimer: Timer?
+    internal var writeTimer: Timer?
     private var localFileWriteToPushFactor = 0.25
+    private var cloudLogfileManager: CloudLogFileManagerProtocol
     
     private enum Logability {
         case normal
@@ -19,81 +20,22 @@ class LocalLogFileManager {
         case unfunctional
     }
     
-    private struct LocalLogFile {
-        var buffer: Data = Data()
-        var fileURL: URL?
-        let config: SwiftLogFileCloudConfig
-        //var bufferWriteSize: Int
-        let bufferSizeToGiveUp: Int
-        var bytesWritten: Int = 0
-        var firstFileWrite: Date?
-        var lastFileWrite: Date?
-        var lastFileWriteAttempt: Date?
-        var successiveWriteFailures: Int = 0
-        private static let dateFormatter: DateFormatter = {
-                let dateFormatter = DateFormatter()
-                dateFormatter.timeZone = TimeZone.current
-                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss.SSSZ'"
-                return dateFormatter
-        }()
-        
-        fileprivate func createLogFileName(deviceId: String?) -> String {
-            var deviceIdForFileName = deviceId
-            if deviceId == nil || deviceId?.count == 0 {
-                deviceIdForFileName = UIDevice.current.identifierForVendor?.uuidString
-            }
-            let fileDateString = LocalLogFile.dateFormatter.string(from: Date())
-            let bundleString = Bundle.main.bundleIdentifier
-            let versionNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            let buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-            
-            var fileString: String = ""
-            if let deviceID = deviceIdForFileName {
-                fileString += "\(deviceID)"
-            }
-            fileString += "-\(fileDateString)"
-            if let bundleString = bundleString {
-                fileString += "-\(bundleString)"
-            }
-            if let buildNumber = buildNumber, let versionNumber = versionNumber {
-                fileString += "-v\(versionNumber)b\(buildNumber)"
-            }
-
-            fileString += ".log"
-            return fileString.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)! //TODO this shoudl always escape, but be better here
-        }
-        
-        fileprivate func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?) -> URL {
-            let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-            
-            if localLogDirectoryName.count != 0 {
-                return paths[0].appendingPathComponent(localLogDirectoryName).appendingPathComponent(createLogFileName(deviceId: clientDeviceID))
-            } else {
-                return paths[0].appendingPathComponent(createLogFileName(deviceId: clientDeviceID))
-            }
-        }
-        
-        init(config: SwiftLogFileCloudConfig) {
-            self.config = config
-            self.bufferSizeToGiveUp = 4 * config.localFileBufferSize
-            self.fileURL = createLogFileURL(localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString)
-            // The below only applies for manual testing, and breaks value type constants
-            //  #if targetEnvironment(simulator)
-            //      self.bufferWriteSize = 1024 * 16
-            //  #endif
-        }
+    private func startWriteTimer(interval: TimeInterval) -> Timer {
+        return Timer.scheduledTimer(timeInterval: interval, target: self, selector: #selector(timedAtemptToWriteToDisk), userInfo: nil, repeats: true)
     }
     
-    init(config: SwiftLogFileCloudConfig) {
+    init(config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol) {
         
         self.config = config
+        self.cloudLogfileManager = cloudLogfileManager
 
         self.localLogFile = LocalLogFile(config: config) // TODO: Defer this until the first log message, which may be well after startup
         
-        writeTimer = Timer.scheduledTimer(timeInterval: config.localFileBufferWriteInterval, target: self, selector: #selector(timedAtemptToWriteToDisk), userInfo: nil, repeats: true)
+        writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
         
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(appWillResignActive), name: UIApplication.willResignActiveNotification, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(appWillResumeActive), name: UIApplication.willEnterForegroundNotification, object: nil)
         
         //wait 15s after startup, then attempt to push any files from previous runs up to cloud
         _ = Timer.scheduledTimer(timeInterval: 15, target: self, selector: #selector(processStrandedFilesAtStartup), userInfo: nil, repeats: false)
@@ -104,10 +46,17 @@ class LocalLogFileManager {
         #endif
     }
     
-    @objc private func appWillResignActive() {
+    @objc internal func appWillResumeActive() {
+        if !(writeTimer?.isValid ?? false) {
+           writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
+        }
+    }
+    @objc internal func appWillResignActive(_ completionForTesting: (()->Void)? = nil) {
         localLogQueue.async {  //TODO: make this a background task
             self.writeLogFileToDisk(forceFlushToCloud: true)
+            completionForTesting?()
         }
+        self.writeTimer?.invalidate()
     }
     
     internal func createLocalLogDirectory() {
@@ -147,7 +96,7 @@ class LocalLogFileManager {
         localLogQueue.async {
             for fileURL in self.retrieveLocalLogFileListOnDisk() where fileURL != self.localLogFile.fileURL {
                 if self.config.logToCloud {
-                    //self.addFileToCloudPushQueue(localFileURL: fileURL)
+                    self.cloudLogfileManager.addFileToCloudPushQueue(localFileURL: fileURL)
                 } else {
                     self.deleteLocalFile(fileURL)
                 }
@@ -185,21 +134,21 @@ class LocalLogFileManager {
                 localLogFile.successiveWriteFailures = 0
                  
                 if forceFlushToCloud || isNowTheRightTimeToLogLocalFileToCloud() {
-//                    do {
-//                        if #available(iOS 13.0, *) || #available(macOS 10.15, *) {
-//                            try fileHandle.synchronize()
-//                            try fileHandle.close()
-//                        }
-//                    } catch {
-//
-//                    }
-//                    writeLogFileToCloud(logFile: localLogFile)
+                    do {
+                        if #available(iOS 13.0, macOS 10.15, *) {
+                            try fileHandle.synchronize()
+                            try fileHandle.close()
+                        }
+                    } catch {
+
+                    }
+                    cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
                     localLogFile = LocalLogFile(config: config)
                     localLogFile.lastFileWrite = Date()
-//                } else {
-//                    if #available(iOS 13.0, *) {
-//                        try fileHandle.close()
-//                    }
+                } else {
+                    if #available(iOS 13.0, *) {
+                        try fileHandle.close()
+                    }
                 }
             } catch {
                 localLogFile.successiveWriteFailures += 1
@@ -211,6 +160,12 @@ class LocalLogFileManager {
                 localLogFile.buffer = Data()
                 localLogFile.lastFileWrite = Date()
                 localLogFile.successiveWriteFailures = 0
+                
+                if forceFlushToCloud {
+                    cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
+                    localLogFile = LocalLogFile(config: config)
+                    localLogFile.lastFileWrite = Date()
+                }
             } catch {
                 localLogFile.successiveWriteFailures += 1
             }

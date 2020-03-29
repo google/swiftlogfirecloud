@@ -7,7 +7,7 @@ import Foundation
 
 
 struct SwiftLogFileCloudConfig {
-    private static let megabyte     : Int = 1048576
+    internal static let megabyte     : Int = 1048576
     var logToCloud                  : Bool = false
     var localFileBufferSize         : Int = megabyte
     var localFileBufferWriteInterval: TimeInterval = 60.0
@@ -62,15 +62,19 @@ class SwiftLogFireCloud : LogHandler {
     private var localFileLogManager: LocalLogFileManager
     private var logMessageDateFormatter = DateFormatter()
     private var logHandlerSerialQueue: DispatchQueue
+    private var cloudLogFileManager: CloudLogFileManagerProtocol
     
-    init(label: String, config: SwiftLogFileCloudConfig) {
+    init(label: String, config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol? = nil) {
         self.label = label
         self.config = config
         logMessageDateFormatter.timeZone = TimeZone.current
         logMessageDateFormatter.locale = Locale(identifier: "en_US_POSIX")
         logMessageDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
         logMessageDateFormatter.calendar = Calendar(identifier: .gregorian)
-        localFileLogManager = LocalLogFileManager(config: config)
+        
+        self.cloudLogFileManager = cloudLogfileManager == nil ? CloudLogFileManager() : cloudLogfileManager!
+
+        localFileLogManager = LocalLogFileManager(config: config, cloudLogfileManager: self.cloudLogFileManager)
         logHandlerSerialQueue = DispatchQueue(label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)
     }
 

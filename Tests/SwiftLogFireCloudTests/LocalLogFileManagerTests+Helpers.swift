@@ -13,7 +13,7 @@ extension LocalLogFileManagerTests {
     internal func removeLogDirectory() {
         XCTAssert(paths.count > 0)
         var documentsDirectory = paths[0]
-        documentsDirectory.appendPathComponent(testingLogFileDirectoryName)
+        documentsDirectory.appendPathComponent(config.logDirectoryName)
         
         var isDir: ObjCBool = false
         let logDirectoryExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
@@ -24,15 +24,14 @@ extension LocalLogFileManagerTests {
             } catch {
                 XCTFail()
             }
-
         }
     }
     
     internal func writeDummyLogFile(fileName: String) -> URL {
         let data = "I am test data for a about to be deleted file".data(using: .utf8)
-        let fileURL = paths[0].appendingPathComponent(testingLogFileDirectoryName).appendingPathComponent(fileName)
+        let fileURL = paths[0].appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
         
-        locaLogFileManager?.createLocalLogDirectory()
+        localLogFileManager?.createLocalLogDirectory()
         do {
             try data?.write(to: fileURL)
         } catch {
@@ -46,7 +45,7 @@ extension LocalLogFileManagerTests {
     }
     
     internal func logFileDirectoryFileCount() -> Int {
-        let pathURL =  paths[0].appendingPathComponent(testingLogFileDirectoryName)
+        let pathURL =  paths[0].appendingPathComponent(config.logDirectoryName)
         do {
             let files = try FileManager.default.contentsOfDirectory(at: pathURL, includingPropertiesForKeys: nil)
             return files.count
