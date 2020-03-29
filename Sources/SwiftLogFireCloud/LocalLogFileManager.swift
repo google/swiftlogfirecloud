@@ -115,6 +115,43 @@ internal class LocalLogFileManager {
         }
     }
     
+    private func appendToExistingLocalLogFile(fileURL: URL, closeAndSynchronize: Bool) {
+        do {
+            let fileHandle = try FileHandle(forUpdating: fileURL)
+            fileHandle.seekToEndOfFile()
+            fileHandle.write(localLogFile.buffer)
+            localLogFile.bytesWritten += localLogFile.buffer.count
+            localLogFile.buffer = Data()
+            localLogFile.lastFileWrite = Date()
+            localLogFile.successiveWriteFailures = 0
+            
+            if closeAndSynchronize  {
+                do {
+                    if #available(iOS 13.0, *) {
+                        try fileHandle.synchronize()
+                        try fileHandle.close()
+                    }
+                } catch {
+                    // cest la vie
+                }
+            }
+        } catch {
+            localLogFile.successiveWriteFailures += 1
+        }
+    }
+    
+    private func firstWriteOfLocalLogFile(fileURL: URL) {
+        do {
+            try localLogFile.buffer.write(to: fileURL)
+            localLogFile.bytesWritten += localLogFile.buffer.count
+            localLogFile.buffer = Data()
+            localLogFile.lastFileWrite = Date()
+            localLogFile.successiveWriteFailures = 0
+        } catch {
+            localLogFile.successiveWriteFailures += 1
+        }
+    }
+    
     private func writeLogFileToDisk(forceFlushToCloud: Bool = false) {
          
         localLogFile.lastFileWriteAttempt = Date()
@@ -122,53 +159,24 @@ internal class LocalLogFileManager {
         createLocalLogDirectory()
          
         guard let fileURL = localLogFile.fileURL else { return }
-    
-        if FileManager.default.fileExists(atPath: fileURL.path) {  // append to the file
-            do {
-                let fileHandle = try FileHandle(forWritingTo: fileURL)
-                fileHandle.seekToEndOfFile()
-                fileHandle.write(localLogFile.buffer)
-                localLogFile.bytesWritten += localLogFile.buffer.count
-                localLogFile.buffer = Data()
-                localLogFile.lastFileWrite = Date()
-                localLogFile.successiveWriteFailures = 0
-                 
-                if forceFlushToCloud || isNowTheRightTimeToLogLocalFileToCloud() {
-                    do {
-                        if #available(iOS 13.0, macOS 10.15, *) {
-                            try fileHandle.synchronize()
-                            try fileHandle.close()
-                        }
-                    } catch {
-
-                    }
-                    cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
-                    localLogFile = LocalLogFile(config: config)
-                    localLogFile.lastFileWrite = Date()
-                } else {
-                    if #available(iOS 13.0, *) {
-                        try fileHandle.close()
-                    }
-                }
-            } catch {
-                localLogFile.successiveWriteFailures += 1
-            }
-        } else { // first write to file
-            do {
-                try localLogFile.buffer.write(to: fileURL)
-                localLogFile.bytesWritten += localLogFile.buffer.count
-                localLogFile.buffer = Data()
-                localLogFile.lastFileWrite = Date()
-                localLogFile.successiveWriteFailures = 0
-                
-                if forceFlushToCloud {
-                    cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
-                    localLogFile = LocalLogFile(config: config)
-                    localLogFile.lastFileWrite = Date()
-                }
-            } catch {
-                localLogFile.successiveWriteFailures += 1
-            }
+        
+        let isFileExistingOnDiskAlready = FileManager.default.fileExists(atPath: fileURL.path)
+        let amIFlushingToCloud = forceFlushToCloud || isNowTheRightTimeToLogLocalFileToCloud()
+        
+        switch isFileExistingOnDiskAlready {
+        case true:
+            appendToExistingLocalLogFile(fileURL: fileURL, closeAndSynchronize: amIFlushingToCloud )
+        case false:
+            firstWriteOfLocalLogFile(fileURL: fileURL)
+        }
+        
+        switch amIFlushingToCloud {
+        case true:
+            cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
+            localLogFile = LocalLogFile(config: config)  // this is a struct, so async write to cloud is working with a copy, ok to update here
+            localLogFile.lastFileWrite = Date()
+        default:
+            return
         }
     }
      
