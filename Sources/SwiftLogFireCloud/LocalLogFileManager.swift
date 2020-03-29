@@ -170,13 +170,10 @@ internal class LocalLogFileManager {
             firstWriteOfLocalLogFile(fileURL: fileURL)
         }
         
-        switch amIFlushingToCloud {
-        case true:
+        if amIFlushingToCloud {
             cloudLogfileManager.writeLogFileToCloud(localFileURL: fileURL)
             localLogFile = LocalLogFile(config: config)  // this is a struct, so async write to cloud is working with a copy, ok to update here
             localLogFile.lastFileWrite = Date()
-        default:
-            return
         }
     }
      
