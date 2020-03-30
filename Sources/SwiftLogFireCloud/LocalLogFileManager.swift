@@ -14,14 +14,14 @@ internal class LocalLogFileManager {
     private var localFileWriteToPushFactor = 0.25
     private var cloudLogfileManager: CloudLogFileManagerProtocol
     
-    private enum Logability {
+    internal enum Logability {
         case normal
         case impaired
         case unfunctional
     }
     
     private func startWriteTimer(interval: TimeInterval) -> Timer {
-        return Timer.scheduledTimer(timeInterval: interval, target: self, selector: #selector(timedAtemptToWriteToDisk), userInfo: nil, repeats: true)
+        return Timer.scheduledTimer(timeInterval: interval, target: self, selector: #selector(timedAttemptToWriteToDisk), userInfo: nil, repeats: true)
     }
     
     init(config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol) {
@@ -105,9 +105,9 @@ internal class LocalLogFileManager {
         }
     }
     
-    @objc private func timedAtemptToWriteToDisk() {
+    @objc private func timedAttemptToWriteToDisk() {
         localLogQueue.async {
-            _ = self.assesLocalLogability()
+            _ = self.assessLocalLogability()
             if self.isNowTheRightTimeToWriteLogToLocalFile() {
                 self.writeLogFileToDisk()
             }
@@ -115,7 +115,7 @@ internal class LocalLogFileManager {
         }
     }
     
-    private func appendToExistingLocalLogFile(fileURL: URL, closeAndSynchronize: Bool) {
+    internal func appendToExistingLocalLogFile(fileURL: URL, closeAndSynchronize: Bool) {
         do {
             let fileHandle = try FileHandle(forUpdating: fileURL)
             fileHandle.seekToEndOfFile()
@@ -140,7 +140,7 @@ internal class LocalLogFileManager {
         }
     }
     
-    private func firstWriteOfLocalLogFile(fileURL: URL) {
+    internal func firstWriteOfLocalLogFile(fileURL: URL) {
         do {
             try localLogFile.buffer.write(to: fileURL)
             localLogFile.bytesWritten += localLogFile.buffer.count
@@ -193,7 +193,7 @@ internal class LocalLogFileManager {
         return true
     }
      
-    private func assesLocalLogability() -> Logability {
+    internal func assessLocalLogability() -> Logability {
         guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.buffer.count) else { localLogability = .unfunctional; return .unfunctional }
         guard isFileSystemFreeSpaceSufficient() else { localLogability = .impaired; return .impaired }
         guard let lastWriteAttempt = localLogFile.lastFileWriteAttempt else { localLogability = .normal; return .normal } // haven't even tried yet.
@@ -225,7 +225,6 @@ internal class LocalLogFileManager {
         localLogability = .normal
         return localLogability
     }
-     
      
     private func isNowTheRightTimeToWriteLogToLocalFile() -> Bool {
          
@@ -267,7 +266,7 @@ internal class LocalLogFileManager {
         return localBytesWritten > fileSizeToPush
     }
      
-    private func trimBufferIfNecessary() {
+    internal func trimBufferIfNecessary() {
         // if the buffer size is 4x the size of when it should write, abandon the log and start over.
         if localLogFile.buffer.count >= localLogFile.bufferSizeToGiveUp {
             localLogFile = LocalLogFile(config: config) // reset
