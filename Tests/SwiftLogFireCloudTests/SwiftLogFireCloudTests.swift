@@ -11,7 +11,8 @@ final class SwiftLogFireCloudTests: XCTestCase {
     
     override func setUp() {
         if !loggerIsBootstrapped {
-            LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: SwiftLogFileCloudConfig()))
+            let config = SwiftLogFileCloudConfig(logToCloud: true, localFileBufferSize: nil, localFileBufferWriteInterval: nil, uniqueID: nil)
+            LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
             loggerIsBootstrapped = true
         }
         if logger == nil {
@@ -30,6 +31,7 @@ final class SwiftLogFireCloudTests: XCTestCase {
     func testForManagerFlushingLogToCloud() {
         SwfitLogFileCloudManager.flushLogToCloudNow()
     }
+    
     static var allTests = [
         ("testForNoCrashOnFirstLog", testForNoCrashOnFirstLog),
         ("testForFlushingLogToCloud", testForFlushingLogToCloud),
