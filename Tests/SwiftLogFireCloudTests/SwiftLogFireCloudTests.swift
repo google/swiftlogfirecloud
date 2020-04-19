@@ -32,15 +32,9 @@ final class SwiftLogFireCloudTests: XCTestCase {
         SwfitLogFileCloudManager.flushLogToCloudNow()
     }
     
-    func testLogALotOfText() {
-        for i in 1...8000000 {
-            logger?.log(level: .info, "\(i) This is my long-ish test log statement.  It will be written many times to try to trigger the file flush")
-        }
-    }
     static var allTests = [
         ("testForNoCrashOnFirstLog", testForNoCrashOnFirstLog),
         ("testForFlushingLogToCloud", testForFlushingLogToCloud),
         ("testForManagerFlushingLogToCloud", testForManagerFlushingLogToCloud),
-        ("testLogALotOfText", testLogALotOfText),
     ]
 }
