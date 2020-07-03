@@ -55,6 +55,13 @@ class SwfitLogFileCloudManager {
         swiftLogFireCloud?.flushLogToCloudNow()
     }
 }
+
+internal enum Logability {
+    case normal
+    case impaired
+    case unfunctional
+}
+
 class SwiftLogFireCloud : LogHandler {
 
     private var label: String
@@ -63,7 +70,7 @@ class SwiftLogFireCloud : LogHandler {
     private var logMessageDateFormatter = DateFormatter()
     private var logHandlerSerialQueue: DispatchQueue
     private var cloudLogFileManager: CloudLogFileManagerProtocol
-    
+                                                            //TODO:  this needs to be the cloud service...
     init(label: String, config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol? = nil) {
         self.label = label
         self.config = config
@@ -72,7 +79,7 @@ class SwiftLogFireCloud : LogHandler {
         logMessageDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZZ"
         logMessageDateFormatter.calendar = Calendar(identifier: .gregorian)
         
-        self.cloudLogFileManager = cloudLogfileManager == nil ? CloudLogFileManager() : cloudLogfileManager!
+        self.cloudLogFileManager = cloudLogfileManager == nil ? CloudLogFileManager(config: config) : cloudLogfileManager!
 
         localFileLogManager = LocalLogFileManager(config: config, cloudLogfileManager: self.cloudLogFileManager)
         logHandlerSerialQueue = DispatchQueue(label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)

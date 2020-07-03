@@ -14,12 +14,6 @@ internal class LocalLogFileManager {
     private var localFileWriteToPushFactor = 0.25
     private var cloudLogfileManager: CloudLogFileManagerProtocol
     
-    internal enum Logability {
-        case normal
-        case impaired
-        case unfunctional
-    }
-    
     private func startWriteTimer(interval: TimeInterval) -> Timer {
         return Timer.scheduledTimer(timeInterval: interval, target: self, selector: #selector(timedAttemptToWriteToDisk), userInfo: nil, repeats: true)
     }
@@ -70,6 +64,17 @@ internal class LocalLogFileManager {
             config.logDirectoryName = ""
             //TODO:  handle the case of directory creation not successful
         }
+    }
+    
+    internal func getLocalLogFileAttributes(fileURL: URL) -> (fileSize: UInt64?, creationDate: Date?) {
+        
+        do {
+            //return [FileAttributeKey : Any]
+            let attr = try FileManager.default.attributesOfItem(atPath: fileURL.path) as NSDictionary
+            return (attr.fileSize(), attr.fileCreationDate())
+        } catch {
+        }
+        return (nil, nil)
     }
     
     internal func deleteLocalFile(_ fileURL: URL) {
@@ -269,15 +274,14 @@ internal class LocalLogFileManager {
     internal func trimBufferIfNecessary() {
         // if the buffer size is 4x the size of when it should write, abandon the log and start over.
         if localLogFile.buffer.count >= localLogFile.bufferSizeToGiveUp {
-            localLogFile = LocalLogFile(config: config) // reset
             // if you're abandoing the local file because writes are failing, delete local files as well
             // if logging to cloud, it should take care of the deletes.
             if !config.logToCloud || !logToCloudOnSimulator {
-                let fileURLs = retrieveLocalLogFileListOnDisk()
-                for fileURL in fileURLs where fileURL != localLogFile.fileURL {
+                if let fileURL = localLogFile.fileURL {
                     deleteLocalFile(fileURL)
                 }
             }
+            localLogFile = LocalLogFile(config: config) // reset
         }
     }
     
