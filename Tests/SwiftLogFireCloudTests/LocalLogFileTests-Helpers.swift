@@ -1,22 +1,21 @@
 //
-//  LocalLogFileManagerTests+Helpers.swift
+//  LocalLogFileTests-Helpers.swift
 //  SwiftLogFireCloud
 //
-//  Created by Timothy Wise on 3/24/20.
+//  Created by Timothy Wise on 7/4/20.
 //
 
 import XCTest
 @testable import SwiftLogFireCloud
 
-//TODO:  this is mostly duplicated across test classes, prolly worth collapsing
-extension LocalLogFileManagerTests {
-    
+extension LocalLogFileTests {
+  
     internal func floodLocalLogFileBuffer() -> String? {
       let sampleLogString = "This is a sample log string\n"
       for _ in 0...20 {
-        localLogFileManager.localLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
+        testLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
       }
-      return String(bytes: localLogFileManager.localLogFile.buffer, encoding: .utf8)
+      return String(bytes: testLogFile.buffer, encoding: .utf8)
     }
   
     internal func removeLogDirectory() {
@@ -35,12 +34,23 @@ extension LocalLogFileManagerTests {
             }
         }
     }
+  
+  internal func createLocalLogDirectory() {
+    guard config.logDirectoryName.count > 0 else { return }
+    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    
+    let pathURL =  paths[0].appendingPathComponent(config.logDirectoryName)
+    do {
+        try FileManager.default.createDirectory(at: pathURL, withIntermediateDirectories: true, attributes: nil)
+    } catch {
+      XCTFail("Unable to create test log directory")
+    }
+  }
     
     internal func writeDummyLogFile(fileName: String) -> URL {
         let data = "I am test data for a about to be deleted file".data(using: .utf8)
         let fileURL = paths[0].appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
         
-        localLogFileManager?.createLocalLogDirectory()
         do {
             try data?.write(to: fileURL)
         } catch {
