@@ -2,26 +2,19 @@
 import UIKit
 #endif
 
-protocol CloudLogFileLocalFileManagerProtocol : class {
-    func deleteLocalFile(fileURL: URL)
-    func getLocalLogFileAttributes(fileURL: URL) -> (fileSize: UInt64?, creationDate: Date?)
-}
-
 class CloudLogFileManager : CloudLogFileManagerProtocol {
     
     private var logability: Logability = .normal
     private var lastWriteAttempt: Date?
     private var lastWriteSuccess: Date?
     private var successiveFails: Int = 0
-    private var strandedFilesToPush: [URL]?
+    private var strandedFilesToPush: [LocalLogFile]?
     private var strandedFileTimer: Timer?
     private var cloudDateFormatter: DateFormatter
     private let config: SwiftLogFileCloudConfig
     
     
     private let cloudLogQueue = DispatchQueue(label: "com.leisurehoundsports.swiftfirelogcloud-remove", qos: .background)
-    
-    weak var delegate : CloudLogFileLocalFileManagerProtocol?
     
     init(config: SwiftLogFileCloudConfig) {
         self.config = config
@@ -63,12 +56,13 @@ class CloudLogFileManager : CloudLogFileManagerProtocol {
         return cloudFilePath
     }
     
-    func writeLogFileToCloud(localFileURL: URL) {
+    func writeLogFileToCloud(localLogFile: LocalLogFile) {
         cloudLogQueue.async {
             
-            let fileAttr = self.delegate?.getLocalLogFileAttributes(fileURL: localFileURL)
-            guard let fileSize = fileAttr?.fileSize, fileSize > 0 else { self.delegate?.deleteLocalFile(fileURL: localFileURL); return }
-            let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr?.creationDate)
+          let fileAttr = localLogFile.getLocalLogFileAttributes()
+          guard let fileSize = fileAttr.fileSize, fileSize > 0 else { localLogFile.delete(); return }
+            //TODO: use the same file name as local here...
+            let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr.creationDate)
 //            let storageReference = self.storage.reference()
 //            let cloudReference = storageReference.child(cloudFilePath)
 //            let uploadTask = cloudReference.putFile(from: localFileURL, metadata: nil) { metadata, error in
@@ -88,14 +82,14 @@ class CloudLogFileManager : CloudLogFileManagerProtocol {
         }
     }
     
-    func addFileToCloudPushQueue(localFileURL: URL) {
+    func addFileToCloudPushQueue(localLogFile: LocalLogFile) {
         if strandedFilesToPush == nil {
-            strandedFilesToPush = [URL]()
+            strandedFilesToPush = [LocalLogFile]()
         }
         if let fileCount = strandedFilesToPush?.count, fileCount <= 20 {
-            strandedFilesToPush?.append(localFileURL)
+            strandedFilesToPush?.append(localLogFile)
         } else {
-            delegate?.deleteLocalFile(fileURL: localFileURL)
+          localLogFile.delete()
         }
         if strandedFilesToPush?.count == 1 {
             DispatchQueue.main.async {
@@ -116,9 +110,9 @@ class CloudLogFileManager : CloudLogFileManagerProtocol {
             }
             
             guard let fileCount = self.strandedFilesToPush?.count, fileCount  > 0 else { return }
-            if let fileURL = self.strandedFilesToPush?.first {
-                self.writeLogFileToCloud(localFileURL: fileURL)
-                self.strandedFilesToPush?.removeFirst()
+            if let localLogFile = self.strandedFilesToPush?.first {
+              self.writeLogFileToCloud(localLogFile: localLogFile)
+              self.strandedFilesToPush?.removeFirst()
             }
         }
     }

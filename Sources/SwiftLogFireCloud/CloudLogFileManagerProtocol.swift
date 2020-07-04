@@ -1,6 +1,6 @@
 import Foundation
 
 internal protocol CloudLogFileManagerProtocol {
-    func writeLogFileToCloud(localFileURL: URL)
-    func addFileToCloudPushQueue(localFileURL: URL)
+    func writeLogFileToCloud(localLogFile: LocalLogFile)
+    func addFileToCloudPushQueue(localLogFile: LocalLogFile)
 }

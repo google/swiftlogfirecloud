@@ -1,27 +1,23 @@
 import Logging
 import Foundation
-//import Firebase
-//TODO:  I actually want to be injected the Storage object, but I need a Firebase object in the library definition to compile, no?  I think I can
-// add it to the test object easy enough, but then I can't build the library without testing. Or is that a feature...
-
-
 
 struct SwiftLogFileCloudConfig {
     internal static let megabyte     : Int = 1048576
-    var logToCloud                  : Bool = false
-    var localFileBufferSize         : Int = megabyte
-    var localFileBufferWriteInterval: TimeInterval = 60.0
-    let uniqueIDString              : String?
-    var minFileSystemFreeSpace      : Int = 20 * megabyte
-    var logDirectoryName            : String = "Logs"
+    var logToCloud                          : Bool = false
+    var localFileSizeThresholdToPushToCloud : Int = megabyte
+    var localFileBufferWriteInterval        : TimeInterval = 60.0
+    let uniqueIDString                      : String?
+    var minFileSystemFreeSpace              : Int = 20 * megabyte
+    var logDirectoryName                    : String = "Logs"
+    var logToCloudOnSimulator               : Bool = false
     //let storage                   : Storage  //This is a Firebase object.  I don't want the library to depend on firebase, rather want to receive it from the library client.
     
-    init(logToCloud: Bool? = nil, localFileBufferSize: Int? = nil, localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil, minFileSystemFreeSpace: Int? = nil, logDirectoryName: String? = nil) {
+  init(logToCloud: Bool? = nil, localFileSizeThresholdToPushToCloud: Int? = nil, localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil, minFileSystemFreeSpace: Int? = nil, logDirectoryName: String? = nil, logToCloudOnSimulator: Bool? = false) {
         if let logToCloud = logToCloud {
             self.logToCloud = logToCloud
         }
-        if let localFileBufferSize = localFileBufferSize {
-            self.localFileBufferSize = localFileBufferSize
+        if let localFileSizeThresholdToPushToCloud = localFileSizeThresholdToPushToCloud {
+            self.localFileSizeThresholdToPushToCloud = localFileSizeThresholdToPushToCloud
         }
         if let localFileBufferWriteInterval = localFileBufferWriteInterval {
             self.localFileBufferWriteInterval = localFileBufferWriteInterval
@@ -31,6 +27,9 @@ struct SwiftLogFileCloudConfig {
         }
         if let logDirectoryName = logDirectoryName {
             self.logDirectoryName = logDirectoryName
+        }
+        if let logToCloudOnSimulator = logToCloudOnSimulator {
+          self.logToCloudOnSimulator = logToCloudOnSimulator
         }
         self.uniqueIDString = uniqueID
     }
@@ -47,12 +46,6 @@ class SwfitLogFileCloudManager {
             return SwfitLogFileCloudManager.swiftLogFireCloud!
         }
         return makeLogHandler
-    }
-    
-    //ISSUE: is this a hack?  adding all the logger extensions to the manager statically?
-    public static func flushLogToCloudNow() {
-        print("Flushing to cloud from the SwiftLogCloudManager")
-        swiftLogFireCloud?.flushLogToCloudNow()
     }
 }
 
@@ -139,20 +132,5 @@ class SwiftLogFireCloud : LogHandler {
     var metadata: Logger.Metadata = .init()
     
     var logLevel: Logger.Level = .info
-    
-    func flushLogToCloudNow() {
-        //ISSUE:  this method is not part of the protocol, so its inaccessible to the client.
-        print("Flushing log to cloud from logHandler")
-    }
-}
-
-extension Logger {
-    func flushLogToCloudNow()  {
-
-        print("Flushing log to cloud from Logger extension")
-        //ISSUE:  this is vislble to the client, but it can't access the handler for it to flush
-        //let handler = self.handler as? SwiftLogFireCloud
-        //Compiler error: 'handler' is inaccessible due to 'internal' protection level
-    }
     
 }

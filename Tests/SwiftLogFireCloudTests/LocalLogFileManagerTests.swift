@@ -3,10 +3,10 @@ import XCTest
 
 final class LocalLogFileManagerTests: XCTestCase {
 
-    var localLogFileManager: LocalLogFileManager?
+    var localLogFileManager: LocalLogFileManager!
     var fakeCloudLogFileManager: FakeCloudLogFileManager?
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    let config = SwiftLogFileCloudConfig(logToCloud: false, localFileBufferSize: 100, localFileBufferWriteInterval: 60, uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs")
+    let config = SwiftLogFileCloudConfig(logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60, uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs", logToCloudOnSimulator: false)
     
     override func setUp() {
         
@@ -24,8 +24,6 @@ final class LocalLogFileManagerTests: XCTestCase {
     
     func testCreateLocalLogDirectorySuccessful() {
         
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        
         localLogFileManager.createLocalLogDirectory()
         
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -37,51 +35,34 @@ final class LocalLogFileManagerTests: XCTestCase {
         let logDirectoryExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
         
         XCTAssert(logDirectoryExists && isDir.boolValue)
-        
     }
     
-    func testDeleteLocalLogFile() {
-        
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        
-        let fileURL = writeDummyLogFile(fileName: "TestLogFileName.log")
-        
-        localLogFileManager.deleteLocalFile(fileURL)
-        
-        var isDir: ObjCBool = false
-        let testLogFileExists = FileManager.default.fileExists(atPath: fileURL.path, isDirectory: &isDir)
-        
-        XCTAssert(testLogFileExists == false && isDir.boolValue == false)
-    }
-    
-    // MARK: testRetreiveLocalLogFileList
     func testRetreieveLocalLogFileListOnDiskWhenEmptyShouldFindDirectoryContentsNil() {
-        
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
+
         localLogFileManager.createLocalLogDirectory()
         let urls = localLogFileManager.retrieveLocalLogFileListOnDisk()
         
         XCTAssert(urls.count == 0)
-        
     }
     
     func testRetrieveLocalLogFileListOnDiskWhenNotEmptyShouldFindFiles() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
         
         let fileURL1 = writeDummyLogFile(fileName: "TestLogFileName1.log")
         let fileURL2 = writeDummyLogFile(fileName: "TestLogFileName2.log")
         
-        let urls = localLogFileManager.retrieveLocalLogFileListOnDisk()
+        let logFiles = localLogFileManager.retrieveLocalLogFileListOnDisk()
+      
+        var logFileURLs = Set<URL>()
+        for logFile in logFiles where logFile.fileURL != nil {
+          logFileURLs.insert(logFile.fileURL!)
+        }
 
-        XCTAssert(urls.contains(fileURL1))
-        XCTAssert(urls.contains(fileURL2))
-        XCTAssert(urls.count == 2)
+        XCTAssert(logFileURLs.contains(fileURL1))
+        XCTAssert(logFileURLs.contains(fileURL2))
+        XCTAssert(logFileURLs.count == 2)
     }
     
-    // MARK: tesProcessStrandedFilesAtStartup
     func testProcessStrandedFilesAtStartupWhenNotLoggingToCloudShouldDeleteLocalFiles() {
-        
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
         
         _ = writeDummyLogFile(fileName: "TestLogFileName1.log")
         _ = writeDummyLogFile(fileName: "TestLogFileName2.log")
@@ -123,8 +104,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     
     // MARK: testIsFileSystemFreeSpaceSufficient()
     func testIsFileSystemFreeSpaceSufficent() {
-        
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
+
         guard let totalDiskSpaceInBytes = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory())[FileAttributeKey.systemFreeSize] as? Int64 else { XCTFail(); return}
         
         XCTAssert((totalDiskSpaceInBytes > 20 * 1048576 && localLogFileManager.isFileSystemFreeSpaceSufficient()) ||
@@ -140,10 +120,7 @@ final class LocalLogFileManagerTests: XCTestCase {
         XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
     }
     
-    // MARK: testAppWillResumeActive
     func testAppWillResumeActiveWhenTimerStoppedShouldRestartWriteTimer() {
-        
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
         
         if localLogFileManager.writeTimer?.isValid ?? false {
             localLogFileManager.writeTimer?.invalidate()
@@ -155,7 +132,6 @@ final class LocalLogFileManagerTests: XCTestCase {
     }
     
     func testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
         
         XCTAssertTrue(localLogFileManager.writeTimer?.isValid ?? false)
         
@@ -164,10 +140,9 @@ final class LocalLogFileManagerTests: XCTestCase {
         XCTAssertTrue(localLogFileManager.writeTimer?.isValid ?? false)
     }
     
-    // MARK: testAppWillResignActive
     func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
 
-        let config = SwiftLogFileCloudConfig(logToCloud: true, uniqueID: "testDevice", logDirectoryName: "TestLogs")
+      let config = SwiftLogFileCloudConfig(logToCloud: true, localFileSizeThresholdToPushToCloud: 400, uniqueID: "testDevice", logDirectoryName: "TestLogs", logToCloudOnSimulator: true)
         
         let fakeCloudLogFileManager = FakeCloudLogFileManager()
         let localLogFileManager = LocalLogFileManager(config: config, cloudLogfileManager: fakeCloudLogFileManager)
@@ -176,71 +151,24 @@ final class LocalLogFileManagerTests: XCTestCase {
             XCTFail("No local file created")
             return
         }
+        let bufferStr = floodLocalLogFileBuffer()
+        localLogFileManager.localLogFile.buffer = (bufferStr?.data(using: .utf8))!
+        localLogFileManager.localLogFile.writeLogFileToDisk(shouldSychronize: true)
 
         let expectation = XCTestExpectation(description: "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer")
         localLogFileManager.appWillResignActive() {
-            XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
             expectation.fulfill()
-        }
-        XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
+      }
         
         wait(for: [expectation], timeout: 5.0)
+        XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
+        XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
     }
-    
-    // MARK: testFirstWriteOfLocalFile
-    func testtFirstWriteOfLocalFileShouldWriteFileData() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        guard let fileURL = localLogFileManager.localLogFile.fileURL else { XCTFail(); return }
-        
-        let sampleLogString = "Sample Log Message"
-        guard let sampleLogData = sampleLogString.data(using: .utf8) else { XCTFail(); return }
-        
-        localLogFileManager.localLogFile.buffer = sampleLogData
-        localLogFileManager.createLocalLogDirectory()
-        localLogFileManager.firstWriteOfLocalLogFile(fileURL: fileURL)
-        
-        do {
-            let textRead = try String(contentsOf: fileURL)
-            XCTAssert(textRead == sampleLogString)
-        } catch {
-            XCTFail("Unable to read the written text file in testtFirstWriteOfLocalFileShouldWriteFileData()")
-        }
-    }
-    
-    // MARK: testAppendToExistingLocalLogFile
-    func testAppendToExistingLocalLogFileShouldAppendFile() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        guard let fileURL = localLogFileManager.localLogFile.fileURL else { XCTFail(); return }
-        
-        let sampleLogString1 = "Sample Log Message"
-        guard let sampleLogData1 = sampleLogString1.data(using: .utf8) else { XCTFail(); return }
-        
-        localLogFileManager.createLocalLogDirectory()
-        do {
-            try sampleLogData1.write(to: fileURL)
-        } catch {
-            XCTFail("Unable to write initial text file in testAppendToExistingLocalLogFileShouldAppendFile()")
-        }
-        
-        let sampleLogString2 = "Appended sample log message"
-        guard let sampleLogData2 = sampleLogString2.data(using: .utf8) else { XCTFail(); return }
-        
-        localLogFileManager.localLogFile.buffer = sampleLogData2
-        localLogFileManager.appendToExistingLocalLogFile(fileURL: fileURL, closeAndSynchronize: true)
-        
-        do {
-            let textRead = try String(contentsOf: fileURL)
-            XCTAssert(textRead == "\(sampleLogString1)\(sampleLogString2)")
-        } catch {
-            XCTFail("Unable to read appended text file in testAppendToExistingLocalLogFileShouldAppendFile()")
-        }
-    }
-    
-    // MARK: testAssessLocalLogability
     
     func testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired() {
         var config = self.config
-        config.minFileSystemFreeSpace = SwiftLogFileCloudConfig.megabyte * 10_000_000_000 // FLAKY: this will fail when devices and simulators ship with 10PB.
+        // FLAKY: this will fail when devices and simulators ship with 10PB.
+        config.minFileSystemFreeSpace = SwiftLogFileCloudConfig.megabyte * 10_000_000_000
         
         let fakeCloudLogFileManager = FakeCloudLogFileManager()
         let localLogFileManager = LocalLogFileManager(config: config, cloudLogfileManager: fakeCloudLogFileManager)
@@ -295,36 +223,8 @@ final class LocalLogFileManagerTests: XCTestCase {
                XCTAssert(normalLogability == .normal)
     }
     
-    // MARK: testTrimBufferIfNecessary
-    func testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmpty() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        
-        localLogFileManager.trimBufferIfNecessary()
-        
-        XCTAssert(localLogFileManager.localLogFile.buffer.count == 0)
-    }
-    
-    func testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles() {
-        guard let localLogFileManager = localLogFileManager else { XCTFail(); return }
-        
-        let sampleLogString = "This is a Sample Log String"
-        guard let sampleLogData = sampleLogString.data(using: .utf8) else { XCTFail(); return }
-        
-        for _ in 1...50 {
-            localLogFileManager.localLogFile.buffer.append(sampleLogData)
-        }
-        let url = writeDummyLogFile(fileName: "tokenLogFile.log")
-        localLogFileManager.localLogFile.fileURL = url
-        
-        localLogFileManager.trimBufferIfNecessary()
-        
-        XCTAssert(localLogFileManager.localLogFile.buffer.count == 0)
-        XCTAssert(isLogFileDirectoryEmpty())
-    }
-    
     static var allTests = [
         ("testCreateLocalLogDirectorySuccessful", testCreateLocalLogDirectorySuccessful),
-        ("testDeleteLocalLogFile", testDeleteLocalLogFile),
         ("testRetreieveLocalLogFileListOnDiskWhenEmptyShouldFindDirectoryContentsNil", testRetreieveLocalLogFileListOnDiskWhenEmptyShouldFindDirectoryContentsNil),
         ("testRetrieveLocalLogFileListOnDiskWhenNotEmptyShouldFindFiles", testRetrieveLocalLogFileListOnDiskWhenNotEmptyShouldFindFiles),
         ("testProcessStrandedFilesAtStartupWhenNotLoggingToCloudShouldDeleteLocalFiles", testProcessStrandedFilesAtStartupWhenNotLoggingToCloudShouldDeleteLocalFiles),
@@ -334,13 +234,8 @@ final class LocalLogFileManagerTests: XCTestCase {
         ("testAppWillResumeActiveWhenTimerStoppedShouldRestartWriteTimer", testAppWillResumeActiveWhenTimerStoppedShouldRestartWriteTimer),
         ("testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer", testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer),
         ("testAppWillResignActiveShouldWriteFileToCloudAndStopTimer", testAppWillResignActiveShouldWriteFileToCloudAndStopTimer),
-        ("testtFirstWriteOfLocalFileShouldWriteFileData", testtFirstWriteOfLocalFileShouldWriteFileData),
-        ("testAppendToExistingLocalLogFileShouldAppendFile", testAppendToExistingLocalLogFileShouldAppendFile),
         ("testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired", testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired),
         ("testAssessLocalLogabilityWhenNoWritesAttemptedShouldBeNormal",testAssessLocalLogabilityWhenNoWritesAttemptedShouldBeNormal),
         ("testAssessLocalLogabilityWhenLastWriteIsAllCasesShouldReturnAllLogabilities", testAssessLocalLogabilityWhenLastWriteIsAllCasesShouldReturnAllLogabilities),
-        ("testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmpty", testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmpty),
-        ("testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles", testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles),
-        
     ]
 }
