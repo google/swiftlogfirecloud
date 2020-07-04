@@ -18,6 +18,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     }
     
     override func tearDown() {
+        deleteAllLogFiles()
         removeLogDirectory()
     }
     
@@ -312,7 +313,8 @@ final class LocalLogFileManagerTests: XCTestCase {
         for _ in 1...50 {
             localLogFileManager.localLogFile.buffer.append(sampleLogData)
         }
-        _ = writeDummyLogFile(fileName: "tokenLogFile.log")
+        let url = writeDummyLogFile(fileName: "tokenLogFile.log")
+        localLogFileManager.localLogFile.fileURL = url
         
         localLogFileManager.trimBufferIfNecessary()
         

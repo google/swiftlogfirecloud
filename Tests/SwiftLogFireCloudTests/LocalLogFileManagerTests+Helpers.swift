@@ -22,7 +22,7 @@ extension LocalLogFileManagerTests {
             do {
                 try FileManager.default.removeItem(at: documentsDirectory)
             } catch {
-                XCTFail()
+                XCTFail("Unable to delete log file directory")
             }
         }
     }
@@ -54,5 +54,19 @@ extension LocalLogFileManagerTests {
         }
         XCTFail("Unable to determine how many files in the test log directory")
         return 0
+    }
+  
+    internal func deleteAllLogFiles() {
+      var isDir: ObjCBool = false
+      let directoryFileURL = paths[0].appendingPathComponent(config.logDirectoryName)
+      guard FileManager.default.fileExists(atPath: directoryFileURL.path, isDirectory: &isDir) else { return }
+      do {
+        let files = try FileManager.default.contentsOfDirectory(at: directoryFileURL, includingPropertiesForKeys: nil)
+        for file in files {
+          try FileManager.default.removeItem(at: file)
+        }
+      } catch let error {
+        XCTFail("Unable to delete file during deleteAllLogFiles \(error.localizedDescription)")
+      }
     }
 }
