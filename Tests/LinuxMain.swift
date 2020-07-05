@@ -1,6 +1,5 @@
-import XCTest
-
 import SwiftLogFireCloudTests
+import XCTest
 
 var tests = [XCTestCaseEntry]()
 tests += SwiftLogFireCloudTests.allTests()

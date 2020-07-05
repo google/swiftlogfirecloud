@@ -1,10 +1,10 @@
 import XCTest
 
 #if !canImport(ObjectiveC)
-public func allTests() -> [XCTestCaseEntry] {
+  func allTests() -> [XCTestCaseEntry] {
     return [
-        testCase(SwiftLogFireCloudTests.allTests),
-        testCase(LocalLogFileManagerTests.allTests),
+      testCase(SwiftLogFireCloudTests.allTests),
+      testCase(LocalLogFileManagerTests.allTests),
     ]
-}
+  }
 #endif
