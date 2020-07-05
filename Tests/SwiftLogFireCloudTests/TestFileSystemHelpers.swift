@@ -1,10 +1,3 @@
-//
-//  TestFileSystemHelpers.swift
-//  SwiftLogFireCloudTests
-//
-//  Created by Timothy Wise on 7/5/20.
-//
-
 import Logging
 import XCTest
 

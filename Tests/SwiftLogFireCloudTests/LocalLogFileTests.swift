@@ -1,10 +1,3 @@
-//
-//  LocalLogFileTests.swift
-//  SwiftLogFireCloudTests
-//
-//  Created by Timothy Wise on 7/4/20.
-//
-
 import XCTest
 
 @testable import SwiftLogFireCloud

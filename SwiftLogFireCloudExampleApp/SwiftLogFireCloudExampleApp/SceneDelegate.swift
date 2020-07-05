@@ -1,10 +1,6 @@
 //
 //  SceneDelegate.swift
 //  SwiftLogFireCloudExampleApp
-//
-//  Created by Timothy Wise on 7/5/20.
-//  Copyright © 2020 Leisure Hound Sports, Inc. All rights reserved.
-//
 
 import UIKit
 

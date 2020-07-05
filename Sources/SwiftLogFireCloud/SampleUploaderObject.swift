@@ -1,10 +1,3 @@
-//
-//  SampleUploaderObject.swift
-//  SwiftLogFireCloud
-//
-//  Created by Timothy Wise on 7/3/20.
-//
-
 import Foundation
 
 //import Firebase
