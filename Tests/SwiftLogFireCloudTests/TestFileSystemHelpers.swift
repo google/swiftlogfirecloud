@@ -5,6 +5,7 @@
 //  Created by Timothy Wise on 7/5/20.
 //
 
+import Logging
 import XCTest
 
 @testable import SwiftLogFireCloud
@@ -18,12 +19,20 @@ class TestFileSystemHelpers {
     self.path = path
     self.config = config
   }
-  internal func floodLocalLogFileBuffer(localLogFile: LocalLogFile) -> String? {
+  internal func flood(localLogFile: LocalLogFile) -> String? {
     let sampleLogString = "This is a sample log string\n"
     for _ in 0...20 {
       localLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
     }
     return String(bytes: localLogFile.buffer, encoding: .utf8)
+  }
+
+  internal func flood(logger: Logger) {
+    let sampleLogString = "This is a sample log string"
+    for _ in 0...3 {
+      logger.info("\(sampleLogString)")
+    }
+    return
   }
 
   internal func removeLogDirectory() {
@@ -77,16 +86,20 @@ class TestFileSystemHelpers {
   }
 
   internal func logFileDirectoryFileCount() -> Int {
+    return logFileDirectoryContents().count
+  }
+
+  internal func logFileDirectoryContents() -> [URL] {
     let pathURL = path.appendingPathComponent(config.logDirectoryName)
     do {
       let files = try FileManager.default.contentsOfDirectory(
         at: pathURL, includingPropertiesForKeys: nil)
-      return files.count
+      return files
     } catch {
 
     }
     XCTFail("Unable to determine how many files in the test log directory")
-    return 0
+    return []
   }
 
   internal func deleteAllLogFiles() {

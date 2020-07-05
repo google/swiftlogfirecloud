@@ -13,6 +13,7 @@ internal class LocalLogFileManager {
   private var localLogability: Logability = .normal
   internal var writeTimer: Timer?
   private var cloudLogfileManager: CloudLogFileManagerProtocol
+  private let label: String
 
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
@@ -20,13 +21,16 @@ internal class LocalLogFileManager {
       userInfo: nil, repeats: true)
   }
 
-  init(config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol) {
+  init(
+    label: String, config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol
+  ) {
 
+    self.label = label
     self.config = config
     self.cloudLogfileManager = cloudLogfileManager
 
     // TODO: Defer this until the first log message, which may be well after startup
-    self.localLogFile = LocalLogFile(config: config)
+    self.localLogFile = LocalLogFile(label: label, config: config)
 
     writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
 
@@ -87,7 +91,7 @@ internal class LocalLogFileManager {
       )
       .filter { $0.pathExtension == "log" }
       for file in files {
-        let logFileOnDisk = LocalLogFile(config: config)
+        let logFileOnDisk = LocalLogFile(label: label, config: config)
         logFileOnDisk.fileURL = file
         let attr = logFileOnDisk.getLocalLogFileAttributes()
         if let fileSize = attr.fileSize {
@@ -202,7 +206,7 @@ internal class LocalLogFileManager {
       if let localFileToPush = localLogFile.copy() as? LocalLogFile {
         cloudLogfileManager.writeLogFileToCloud(localLogFile: localFileToPush)
       }
-      localLogFile = LocalLogFile(config: config)
+      localLogFile = LocalLogFile(label: label, config: config)
       localLogFile.lastFileWrite = Date()
     }
   }

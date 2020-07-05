@@ -12,6 +12,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
     logToCloudOnSimulator: false)
   var testFileSystemHelpers: TestFileSystemHelpers!
+  let dummyLabel = "ManagerWriting"
 
   override func setUp() {
 
@@ -21,7 +22,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       return
     }
     localLogFileManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: fakeCloudLogFileManager)
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
   }
@@ -96,7 +97,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     // create a special localLogFileManager with an updated config
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: fakeCloudLogFileManager)
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
     let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
     let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
@@ -141,7 +142,7 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: fakeCloudLogFileManager)
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
   }
 
@@ -168,18 +169,18 @@ final class LocalLogFileManagerTests: XCTestCase {
   func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
 
     let config = SwiftLogFileCloudConfig(
-      logToCloud: true, localFileSizeThresholdToPushToCloud: 400, uniqueID: "testDevice",
+      logToCloud: true, localFileSizeThresholdToPushToCloud: 100, uniqueID: "testDevice",
       logDirectoryName: "TestLogs", logToCloudOnSimulator: true)
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: fakeCloudLogFileManager)
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
     guard let localFileURL = localLogFileManager.localLogFile.fileURL else {
       XCTFail("No local file created")
       return
     }
-    let bufferStr = testFileSystemHelpers.floodLocalLogFileBuffer(
+    let bufferStr = testFileSystemHelpers.flood(
       localLogFile: localLogFileManager.localLogFile)
     localLogFileManager.localLogFile.buffer = (bufferStr?.data(using: .utf8))!
     localLogFileManager.localLogFile.writeLogFileToDisk(shouldSychronize: true)
@@ -202,7 +203,7 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: fakeCloudLogFileManager)
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
     let logability = localLogFileManager.assessLocalLogability()
 

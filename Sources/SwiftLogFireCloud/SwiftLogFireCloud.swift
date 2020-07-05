@@ -84,10 +84,11 @@ class SwiftLogFireCloud: LogHandler {
 
     // swift-format-ignore: NeverForceUnwrap
     self.cloudLogFileManager =
-      cloudLogfileManager == nil ? CloudLogFileManager(config: config) : cloudLogfileManager!
+      cloudLogfileManager == nil
+      ? CloudLogFileManager(label: label, config: config) : cloudLogfileManager!
 
     localFileLogManager = LocalLogFileManager(
-      config: config, cloudLogfileManager: self.cloudLogFileManager)
+      label: label, config: config, cloudLogfileManager: self.cloudLogFileManager)
     logHandlerSerialQueue = DispatchQueue(
       label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)
   }

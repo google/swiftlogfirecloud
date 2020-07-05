@@ -17,9 +17,10 @@ class LocalLogFileTests: XCTestCase {
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   var testLogFile: LocalLogFile!
   var testFileSystemHelpers: TestFileSystemHelpers!
+  let dummyLabel = "LocalLogFileDirectWriting"
 
   override func setUpWithError() throws {
-    testLogFile = LocalLogFile(config: config)
+    testLogFile = LocalLogFile(label: dummyLabel, config: config)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
 
@@ -44,7 +45,6 @@ class LocalLogFileTests: XCTestCase {
     XCTAssert(testLogFileExists == false && isDir.boolValue == false)
   }
 
-  // MARK: testTrimBufferIfNecessary
   func testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference() {
 
     let originalTestLogFileReference = testLogFile
@@ -55,7 +55,7 @@ class LocalLogFileTests: XCTestCase {
   }
 
   func testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles() {
-    _ = testFileSystemHelpers.floodLocalLogFileBuffer(localLogFile: testLogFile)
+    _ = testFileSystemHelpers.flood(localLogFile: testLogFile)
     let originalTestLogFileReference = testLogFile
     let newTestFileLogFileReference = testLogFile.trimBufferIfNecessary()
 
@@ -71,7 +71,7 @@ class LocalLogFileTests: XCTestCase {
     }
 
     guard
-      let sampleLoggedString = testFileSystemHelpers.floodLocalLogFileBuffer(
+      let sampleLoggedString = testFileSystemHelpers.flood(
         localLogFile: testLogFile)
     else {
       XCTFail("Faild to initialize buffer in testAppendToExistingLocalLogFileShouldAppendFile")
@@ -79,7 +79,7 @@ class LocalLogFileTests: XCTestCase {
     }
     testLogFile.writeLogFileToDisk()
     guard
-      let appendedLoggedString = testFileSystemHelpers.floodLocalLogFileBuffer(
+      let appendedLoggedString = testFileSystemHelpers.flood(
         localLogFile: testLogFile)
     else {
       XCTFail("Faild to appended buffer in testAppendToExistingLocalLogFileShouldAppendFile")
@@ -102,7 +102,7 @@ class LocalLogFileTests: XCTestCase {
       return
     }
 
-    let sampleLoggedString = testFileSystemHelpers.floodLocalLogFileBuffer(
+    let sampleLoggedString = testFileSystemHelpers.flood(
       localLogFile: testLogFile)
     testLogFile.writeLogFileToDisk()
 

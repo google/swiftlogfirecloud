@@ -12,11 +12,13 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   private var strandedFileTimer: Timer?
   private var cloudDateFormatter: DateFormatter
   private let config: SwiftLogFileCloudConfig
+  private let label: String
 
   private let cloudLogQueue = DispatchQueue(
     label: "com.leisurehoundsports.swiftfirelogcloud-remove", qos: .background)
 
-  init(config: SwiftLogFileCloudConfig) {
+  init(label: String, config: SwiftLogFileCloudConfig) {
+    self.label = label
     self.config = config
 
     cloudDateFormatter = DateFormatter()
@@ -54,6 +56,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
         cloudFilePath += "\(deviceID)/"
       }
     }
+    cloudFilePath += "\(label)/"
     cloudFilePath += "\(fileDateString).log"
     return cloudFilePath
   }

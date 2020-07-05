@@ -4,7 +4,7 @@
 
 internal class LocalLogFile: NSCopying {
   func copy(with zone: NSZone? = nil) -> Any {
-    let copy = LocalLogFile(config: config)
+    let copy = LocalLogFile(label: label, config: config)
     copy.buffer = buffer
     copy.fileURL = fileURL
     copy.bytesWritten = bytesWritten
@@ -25,6 +25,7 @@ internal class LocalLogFile: NSCopying {
   var lastFileWrite: Date?
   var lastFileWriteAttempt: Date?
   var successiveWriteFailures: Int = 0
+  let label: String
   private var localFileWriteToPushFactor = 0.25
 
   private static let dateFormatter: DateFormatter = {
@@ -57,6 +58,7 @@ internal class LocalLogFile: NSCopying {
       fileString += "-v\(versionNumber)b\(buildNumber)"
     }
 
+    fileString += "-\(label)"
     fileString += ".log"
     print(fileString)
     //TODO this should always be escaped, but better to be safe here
@@ -80,8 +82,9 @@ internal class LocalLogFile: NSCopying {
     }
   }
 
-  init(config: SwiftLogFileCloudConfig) {
+  init(label: String, config: SwiftLogFileCloudConfig) {
     self.config = config
+    self.label = label
     self.bufferSizeToGiveUp = 4 * config.localFileSizeThresholdToPushToCloud
     self.fileURL = createLogFileURL(
       localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString)
@@ -117,7 +120,7 @@ internal class LocalLogFile: NSCopying {
       if !config.logToCloud || !config.logToCloudOnSimulator {
         delete()
       }
-      return LocalLogFile(config: config)  // reset
+      return LocalLogFile(label: label, config: config)  // reset
     }
     return self
   }
