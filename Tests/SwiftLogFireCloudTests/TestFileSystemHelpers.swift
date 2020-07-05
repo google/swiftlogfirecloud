@@ -1,28 +1,33 @@
 //
-//  LocalLogFileManagerTests+Helpers.swift
-//  SwiftLogFireCloud
+//  TestFileSystemHelpers.swift
+//  SwiftLogFireCloudTests
 //
-//  Created by Timothy Wise on 3/24/20.
+//  Created by Timothy Wise on 7/5/20.
 //
 
 import XCTest
 
 @testable import SwiftLogFireCloud
 
-//TODO:  this is mostly duplicated across test classes, prolly worth collapsing
-extension LocalLogFileManagerTests {
+class TestFileSystemHelpers {
 
-  internal func floodLocalLogFileBuffer() -> String? {
+  let path: URL
+  let config: SwiftLogFileCloudConfig
+
+  init(path: URL, config: SwiftLogFileCloudConfig) {
+    self.path = path
+    self.config = config
+  }
+  internal func floodLocalLogFileBuffer(localLogFile: LocalLogFile) -> String? {
     let sampleLogString = "This is a sample log string\n"
     for _ in 0...20 {
-      localLogFileManager.localLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
+      localLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
     }
-    return String(bytes: localLogFileManager.localLogFile.buffer, encoding: .utf8)
+    return String(bytes: localLogFile.buffer, encoding: .utf8)
   }
 
   internal func removeLogDirectory() {
-    XCTAssert(paths.count > 0)
-    var documentsDirectory = paths[0]
+    var documentsDirectory = path
     documentsDirectory.appendPathComponent(config.logDirectoryName)
 
     var isDir: ObjCBool = false
@@ -38,16 +43,31 @@ extension LocalLogFileManagerTests {
     }
   }
 
-  internal func writeDummyLogFile(fileName: String) -> URL {
+  internal func createLocalLogDirectory() {
+    guard config.logDirectoryName.count > 0 else { return }
+    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+
+    let pathURL = paths[0].appendingPathComponent(config.logDirectoryName)
+    do {
+      try FileManager.default.createDirectory(
+        at: pathURL, withIntermediateDirectories: true, attributes: nil)
+    } catch {
+      XCTFail("Unable to create test log directory")
+    }
+  }
+
+  internal func writeDummyLogFile(fileName: String)
+    -> URL
+  {
     let data = "I am test data for a about to be deleted file".data(using: .utf8)
-    let fileURL = paths[0].appendingPathComponent(config.logDirectoryName).appendingPathComponent(
+    let fileURL = path.appendingPathComponent(config.logDirectoryName).appendingPathComponent(
       fileName)
 
-    localLogFileManager?.createLocalLogDirectory()
     do {
       try data?.write(to: fileURL)
-    } catch {
-      XCTFail("Unable to write test file in testDeleteLocalLogFile")
+    } catch let error {
+      print(error.localizedDescription)
+      XCTFail("Unable to write test file in testWriteLocalLogFile")
     }
     return fileURL
   }
@@ -57,7 +77,7 @@ extension LocalLogFileManagerTests {
   }
 
   internal func logFileDirectoryFileCount() -> Int {
-    let pathURL = paths[0].appendingPathComponent(config.logDirectoryName)
+    let pathURL = path.appendingPathComponent(config.logDirectoryName)
     do {
       let files = try FileManager.default.contentsOfDirectory(
         at: pathURL, includingPropertiesForKeys: nil)
@@ -71,7 +91,7 @@ extension LocalLogFileManagerTests {
 
   internal func deleteAllLogFiles() {
     var isDir: ObjCBool = false
-    let directoryFileURL = paths[0].appendingPathComponent(config.logDirectoryName)
+    let directoryFileURL = path.appendingPathComponent(config.logDirectoryName)
     guard FileManager.default.fileExists(atPath: directoryFileURL.path, isDirectory: &isDir) else {
       return
     }

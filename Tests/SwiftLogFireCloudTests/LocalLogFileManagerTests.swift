@@ -11,6 +11,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
     uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
     logToCloudOnSimulator: false)
+  var testFileSystemHelpers: TestFileSystemHelpers!
 
   override func setUp() {
 
@@ -21,16 +22,18 @@ final class LocalLogFileManagerTests: XCTestCase {
     }
     localLogFileManager = LocalLogFileManager(
       config: config, cloudLogfileManager: fakeCloudLogFileManager)
-    removeLogDirectory()
-
+    testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    testFileSystemHelpers.createLocalLogDirectory()
   }
 
   override func tearDown() {
-    deleteAllLogFiles()
-    removeLogDirectory()
+    testFileSystemHelpers.deleteAllLogFiles()
+    testFileSystemHelpers.removeLogDirectory()
   }
 
   func testCreateLocalLogDirectorySuccessful() {
+    //Setup creates the directory, remove it first
+    testFileSystemHelpers.removeLogDirectory()
 
     localLogFileManager.createLocalLogDirectory()
 
@@ -56,8 +59,8 @@ final class LocalLogFileManagerTests: XCTestCase {
 
   func testRetrieveLocalLogFileListOnDiskWhenNotEmptyShouldFindFiles() {
 
-    let fileURL1 = writeDummyLogFile(fileName: "TestLogFileName1.log")
-    let fileURL2 = writeDummyLogFile(fileName: "TestLogFileName2.log")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
 
     let logFiles = localLogFileManager.retrieveLocalLogFileListOnDisk()
 
@@ -73,14 +76,14 @@ final class LocalLogFileManagerTests: XCTestCase {
 
   func testProcessStrandedFilesAtStartupWhenNotLoggingToCloudShouldDeleteLocalFiles() {
 
-    _ = writeDummyLogFile(fileName: "TestLogFileName1.log")
-    _ = writeDummyLogFile(fileName: "TestLogFileName2.log")
+    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
+    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
 
     let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
 
     // the logger init is setup to not log to cloud, so it should just delete files.
     localLogFileManager.processStrandedFilesAtStartup {
-      XCTAssertTrue(self.isLogFileDirectoryEmpty())
+      XCTAssertTrue(self.testFileSystemHelpers.isLogFileDirectoryEmpty())
       expectation.fulfill()
     }
     wait(for: [expectation], timeout: 5.0)
@@ -95,8 +98,8 @@ final class LocalLogFileManagerTests: XCTestCase {
     let localLogFileManager = LocalLogFileManager(
       config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
-    let fileURL1 = writeDummyLogFile(fileName: "TestLogFileName1.log")
-    let fileURL2 = writeDummyLogFile(fileName: "TestLogFileName2.log")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
 
     let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
 
@@ -176,7 +179,8 @@ final class LocalLogFileManagerTests: XCTestCase {
       XCTFail("No local file created")
       return
     }
-    let bufferStr = floodLocalLogFileBuffer()
+    let bufferStr = testFileSystemHelpers.floodLocalLogFileBuffer(
+      localLogFile: localLogFileManager.localLogFile)
     localLogFileManager.localLogFile.buffer = (bufferStr?.data(using: .utf8))!
     localLogFileManager.localLogFile.writeLogFileToDisk(shouldSychronize: true)
 
