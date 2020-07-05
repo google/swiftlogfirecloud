@@ -1,17 +1,54 @@
 import Foundation
 import Logging
 
-struct SwiftLogFileCloudConfig {
-  internal static let megabyte: Int = 1_048_576
+/// Configuration struct to configure the local and cloud logging logic.
+///
+/// Set values to instruct the Log Handler to manage how often to
+/// write logs to disk and the cloud, when to control the persistance
+/// logging itself, cloud and local directory name and the minimum
+/// local file system space for temporarily holding the logs.
+public struct SwiftLogFileCloudConfig {
+
+  /// Enable to ensure log files are persisted to Firebase Cloud Storage bucket.
   var logToCloud: Bool = false
+
+  /// The approximate log size when logs will be persisted to Firebase Cloud Storage bucket.
+  ///
+  /// log files are pushed to the cloud once they eclipse this size or if the `localFileBufferWriteInterval`
+  /// has elapsed
   var localFileSizeThresholdToPushToCloud: Int = megabyte
+
+  /// TimeInterval between when logs will be check for persistence  to Firebase Cloud Storage bucket.
+  ///
+  /// log files are check to be pushed to the cloud on this interval or once they eclipse a size of `localFileSizeThresholdToPushToCloud`
   var localFileBufferWriteInterval: TimeInterval = 60.0
+
+  /// An optional uniqueID string to identify the log file that is embedded in the log file name.
+  ///
+  /// If omitted, the library will utlize the `UIDevice.current.identifierForVendor`  to uniquely identify the logfile
   let uniqueIDString: String?
+
+  /// Minimum required local file system space to start or continue logging.
   var minFileSystemFreeSpace: Int = 20 * megabyte
+
+  /// Directory name used for storing logs, both locally and as the root directy in the cloud storage bucket.
   var logDirectoryName: String = "Logs"
+
+  /// Boolean value to control whether log files are sent to the cloud when running within a simulator.
   var logToCloudOnSimulator: Bool = false
   //let storage                   : Storage  //This is a Firebase object.  I don't want the library to depend on firebase, rather want to receive it from the library client.
+  internal static let megabyte: Int = 1_048_576
 
+  /// Create a new `SwiftLogFileCloudConfig`.
+  ///
+  /// - Parameters:
+  ///   - logToCloud: Enable to ensure log files are persisted to Firebase Cloud Storage bucket.
+  ///   - localFileSizeThresholdToPushToCloud: The approximate log size when logs will be persisted to Firebase Cloud Storage bucket.
+  ///   - localFileBufferWriteInterval: TimeInterval between when logs will be check for persistence  to Firebase Cloud Storage bucket.
+  ///   - uniqueID: An optional uniqueID string to identify the log file that is embedded in the log file name.
+  ///   - minFileSystemFreeSpace: Minimum required local file system space to start or continue logging.
+  ///   - logDirectoryName: Directory name used for storing logs, both locally and as the root directy in the cloud storage bucket.
+  ///   - logToCloudOnSimulator: Boolean value to control whether log files are sent to the cloud when running within a simulator.
   init(
     logToCloud: Bool? = nil, localFileSizeThresholdToPushToCloud: Int? = nil,
     localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil,
@@ -40,12 +77,16 @@ struct SwiftLogFileCloudConfig {
   }
 }
 
+/// Client created object used bootstrap the logging system.
 class SwfitLogFileCloudManager {
 
   typealias LogHandlerFactory = (String) -> LogHandler
   static var swiftLogFireCloud: SwiftLogFireCloud?
 
-  func makeLogHandlerFactory(config: SwiftLogFileCloudConfig) -> LogHandlerFactory {
+  /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
+  /// - Parameter config: SwiftLogFireCloudConfig object for configuring the logger.
+  /// - Returns: returns a function that makes a LogHandler.
+  public func makeLogHandlerFactory(config: SwiftLogFileCloudConfig) -> LogHandlerFactory {
     func makeLogHandler(label: String) -> LogHandler {
       SwfitLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
       // SwiftLogFireCloud can't return nil
@@ -62,7 +103,8 @@ internal enum Logability {
   case unfunctional
 }
 
-class SwiftLogFireCloud: LogHandler {
+/// SwiftLog handler coordinating the management of the local and cloud logs.
+internal class SwiftLogFireCloud: LogHandler {
 
   private var label: String
   private var config: SwiftLogFileCloudConfig
@@ -70,7 +112,7 @@ class SwiftLogFireCloud: LogHandler {
   private var logMessageDateFormatter = DateFormatter()
   private var logHandlerSerialQueue: DispatchQueue
   private var cloudLogFileManager: CloudLogFileManagerProtocol
-  //TODO:  this needs to be the cloud service...
+
   init(
     label: String, config: SwiftLogFileCloudConfig,
     cloudLogfileManager: CloudLogFileManagerProtocol? = nil
@@ -107,12 +149,13 @@ class SwiftLogFireCloud: LogHandler {
     }()
   #endif
 
-  func log(
+  internal func log(
     level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: String,
     function: String, line: UInt
   ) {
     logHandlerSerialQueue.async {
 
+      //TODO: test that the metadata information is written to the log.
       var metadataString: String = ""
       let dateString = self.logMessageDateFormatter.string(from: Date())
       if let metadata = metadata {

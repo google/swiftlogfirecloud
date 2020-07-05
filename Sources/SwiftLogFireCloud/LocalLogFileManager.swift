@@ -153,7 +153,7 @@ internal class LocalLogFileManager {
   }
 
   internal func assessLocalLogability() -> Logability {
-    guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.buffer.count)
+    guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.count())
     else {
       localLogability = .unfunctional
       return .unfunctional
@@ -213,8 +213,9 @@ internal class LocalLogFileManager {
   func log(msg: String) {
     localLogQueue.async {
       guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
-      self.localLogFile.buffer.append(msgData)
+      self.localLogFile.append(msgData)
 
+      //TODO: assess local logability here?
       if !self.isFileSystemFreeSpaceSufficient() { return }
       if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(logability: self.localLogability)
       {

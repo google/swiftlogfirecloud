@@ -2,6 +2,7 @@
   import UIKit
 #endif
 
+/// Class object representing the logging buffer and metadata for writing the buffer to the device local disk.
 internal class LocalLogFile: NSCopying {
   func copy(with zone: NSZone? = nil) -> Any {
     let copy = LocalLogFile(label: label, config: config)
@@ -15,17 +16,19 @@ internal class LocalLogFile: NSCopying {
     copy.localFileWriteToPushFactor = localFileWriteToPushFactor
     return copy
   }
-  // these get passed around a lot, only want to have references
-  var buffer: Data = Data()
+
   var fileURL: URL?
-  let config: SwiftLogFileCloudConfig
-  let bufferSizeToGiveUp: Int
   var bytesWritten: UInt64 = 0
   var firstFileWrite: Date?
   var lastFileWrite: Date?
   var lastFileWriteAttempt: Date?
   var successiveWriteFailures: Int = 0
-  let label: String
+
+  internal var buffer: Data = Data()
+  private let config: SwiftLogFileCloudConfig
+  /// If the log file buffer grows beyond this size, the log file is abandoned.
+  private let bufferSizeToGiveUp: Int
+  private let label: String
   private var localFileWriteToPushFactor = 0.25
 
   private static let dateFormatter: DateFormatter = {
@@ -35,7 +38,14 @@ internal class LocalLogFile: NSCopying {
     return dateFormatter
   }()
 
-  fileprivate func createLogFileName(deviceId: String?) -> String {
+  internal func count() -> Int {
+    return buffer.count
+  }
+
+  /// Creates a unique log file name based in deviceID, creation date/time, bundleID & version and logger label.
+  /// - Parameter deviceId: Client supplied unique identifer for the log
+  /// - Returns: `String` representation of the log file name.
+  private func createLogFileName(deviceId: String?) -> String {
     var deviceIdForFileName = deviceId
     if deviceId == nil || deviceId?.count == 0 {
       deviceIdForFileName = UIDevice.current.identifierForVendor?.uuidString
@@ -71,6 +81,11 @@ internal class LocalLogFile: NSCopying {
     }
   }
 
+  /// Creates a fully qualifying file URL for the log file.
+  /// - Parameters:
+  ///   - localLogDirectoryName: Directory name for storing logs on the local device
+  ///   - clientDeviceID: Client supplied unique identifer for the log
+  /// - Returns: `URL` representation of the log file name.
   internal func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?) -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
 
@@ -90,6 +105,13 @@ internal class LocalLogFile: NSCopying {
       localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString)
   }
 
+  /// Appends data to the log buffer.
+  /// - Parameter data: logging data.
+  internal func append(_ data: Data) {
+    buffer.append(data)
+  }
+
+  /// Deletes the local file from the filesystem.
   internal func delete() {
     guard let url = fileURL else { return }
     do {
@@ -99,6 +121,8 @@ internal class LocalLogFile: NSCopying {
     }
   }
 
+  /// Determines if the buffer is bigger than the size to push buffer to the cloud.
+  /// - Returns: true if the buffer is larger than the `config.localFileSizeThresholdToPushToCloud`.
   internal func isNowTheRightTimeToLogLocalFileToCloud() -> Bool {
     #if targetEnvironment(simulator)
       if !config.logToCloudOnSimulator { return false }
@@ -112,6 +136,8 @@ internal class LocalLogFile: NSCopying {
     return bytesWritten > fileSizeToPush
   }
 
+  /// If the buffer has grown grossly larger than the writable size, abaondon the buffer & delete its local file if it exists
+  /// - Returns: returns self if not trimmed, a new `LocalLogFile` if trimmed.
   internal func trimBufferIfNecessary() -> LocalLogFile {
     // if the buffer size is 4x the size of when it should write, abandon the log and start over.
     if buffer.count >= bufferSizeToGiveUp {
@@ -125,6 +151,10 @@ internal class LocalLogFile: NSCopying {
     return self
   }
 
+  /// Determines if the buffer is bigger than the size to push buffer to file system.
+  /// 
+  /// - Parameter logability: current local logability assesment.
+  /// - Returns: return true if the retry interval based on logability has elapsed.
   internal func isNowTheRightTimeToWriteLogToLocalFile(logability: Logability) -> Bool {
 
     let bufferIsBiggerThanWritableSize =
@@ -154,6 +184,8 @@ internal class LocalLogFile: NSCopying {
     return false
   }
 
+  /// Retrieves attributs of the log file as it sits on the file system.
+  /// - Returns: tuple  of `fileSize` and `creationDate` of the file.
   internal func getLocalLogFileAttributes() -> (fileSize: UInt64?, creationDate: Date?) {
     guard let fileURL = fileURL else { return (nil, nil) }
     do {
@@ -163,6 +195,9 @@ internal class LocalLogFile: NSCopying {
     }
     return (nil, nil)
   }
+
+  /// Writes the logfile to the disk.
+  /// - Parameter shouldSychronize: `Bool` to determine if the file should be synchronized to disk in preparation for push to cloud.
   internal func writeLogFileToDisk(shouldSychronize: Bool = false) {
 
     lastFileWriteAttempt = Date()

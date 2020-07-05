@@ -2,6 +2,10 @@
   import UIKit
 #endif
 
+/// Manages the uploading of log files to the cloud on a background queue.
+///
+/// Upon successful push of the file to the cloud, the local file is deleted.  If the upload fails,
+/// the file is not deleted and pushed to a processing queue to be pushed at a later time.
 class CloudLogFileManager: CloudLogFileManagerProtocol {
 
   private var logability: Logability = .normal
@@ -61,6 +65,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     return cloudFilePath
   }
 
+  /// Pushes a  local log file to the cloud configured by the client app.
+  /// - Parameter localLogFile: Reference to LocalLogFile reference with meta data about the local file on disk.
   func writeLogFileToCloud(localLogFile: LocalLogFile) {
     cloudLogQueue.async {
 
@@ -90,6 +96,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     }
   }
 
+  /// Adds a LocalLogFile reference to the background cloud push queue.
+  /// - Parameter localLogFile: Reference to LocalLogFile reference with meta data about the local file on disk.
   func addFileToCloudPushQueue(localLogFile: LocalLogFile) {
     if strandedFilesToPush == nil {
       strandedFilesToPush = [LocalLogFile]()

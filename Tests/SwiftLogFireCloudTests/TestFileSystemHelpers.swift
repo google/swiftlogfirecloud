@@ -22,7 +22,7 @@ class TestFileSystemHelpers {
   internal func flood(localLogFile: LocalLogFile) -> String? {
     let sampleLogString = "This is a sample log string\n"
     for _ in 0...20 {
-      localLogFile.buffer.append(sampleLogString.data(using: .utf8)!)
+      localLogFile.append(sampleLogString.data(using: .utf8)!)
     }
     return String(bytes: localLogFile.buffer, encoding: .utf8)
   }

@@ -50,7 +50,7 @@ class LocalLogFileTests: XCTestCase {
     let originalTestLogFileReference = testLogFile
     testLogFile = testLogFile.trimBufferIfNecessary()
 
-    XCTAssert(testLogFile.buffer.count == 0)
+    XCTAssert(testLogFile.count() == 0)
     XCTAssertTrue(originalTestLogFileReference === testLogFile)
   }
 
@@ -59,7 +59,7 @@ class LocalLogFileTests: XCTestCase {
     let originalTestLogFileReference = testLogFile
     let newTestFileLogFileReference = testLogFile.trimBufferIfNecessary()
 
-    XCTAssert(newTestFileLogFileReference.buffer.count == 0)
+    XCTAssert(newTestFileLogFileReference.count() == 0)
     XCTAssertFalse(originalTestLogFileReference === newTestFileLogFileReference)
     XCTAssert(testFileSystemHelpers.isLogFileDirectoryEmpty())
   }
