@@ -82,7 +82,7 @@ public class SwiftLogFileCloudManager {
 
   /// Description LogHandler factory method type.
   public typealias LogHandlerFactory = (String) -> LogHandler
-  static var swiftLogFireCloud: SwiftLogFireCloud?
+  public static var swiftLogFireCloud: SwiftLogFireCloud?
 
   /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
   /// - Parameter config: SwiftLogFireCloudConfig object for configuring the logger.
@@ -105,7 +105,7 @@ internal enum Logability {
 }
 
 /// SwiftLog handler coordinating the management of the local and cloud logs.
-internal class SwiftLogFireCloud: LogHandler {
+public class SwiftLogFireCloud: LogHandler {
 
   private var label: String
   private var config: SwiftLogFileCloudConfig
@@ -150,7 +150,7 @@ internal class SwiftLogFireCloud: LogHandler {
     }()
   #endif
 
-  internal func log(
+  public func log(
     level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: String,
     function: String, line: UInt
   ) {
@@ -182,7 +182,7 @@ internal class SwiftLogFireCloud: LogHandler {
     }
   }
 
-  subscript(metadataKey key: String) -> Logger.Metadata.Value? {
+  public subscript(metadataKey key: String) -> Logger.Metadata.Value? {
     get {
       return metadata[key]
     }
@@ -191,8 +191,8 @@ internal class SwiftLogFireCloud: LogHandler {
     }
   }
 
-  var metadata: Logger.Metadata = .init()
+  public var metadata: Logger.Metadata = .init()
 
-  var logLevel: Logger.Level = .info
+  public var logLevel: Logger.Level = .info
 
 }
