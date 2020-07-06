@@ -49,7 +49,7 @@ public struct SwiftLogFileCloudConfig {
   ///   - minFileSystemFreeSpace: Minimum required local file system space to start or continue logging.
   ///   - logDirectoryName: Directory name used for storing logs, both locally and as the root directy in the cloud storage bucket.
   ///   - logToCloudOnSimulator: Boolean value to control whether log files are sent to the cloud when running within a simulator.
-  init(
+  public init(
     logToCloud: Bool? = nil, localFileSizeThresholdToPushToCloud: Int? = nil,
     localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil,
     minFileSystemFreeSpace: Int? = nil, logDirectoryName: String? = nil,
