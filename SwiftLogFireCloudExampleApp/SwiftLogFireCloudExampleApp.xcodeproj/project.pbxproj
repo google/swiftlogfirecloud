@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,6 +13,8 @@
 		F644ADC624B2965D0006100B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC424B2965D0006100B /* Main.storyboard */; };
 		F644ADC824B2965F0006100B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC724B2965F0006100B /* Assets.xcassets */; };
 		F644ADCB24B2965F0006100B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC924B2965F0006100B /* LaunchScreen.storyboard */; };
+		F644ADD424B2A8240006100B /* SwiftLogFireCloud in Frameworks */ = {isa = PBXBuildFile; productRef = F644ADD324B2A8240006100B /* SwiftLogFireCloud */; };
+		F644ADD624B2BEBE0006100B /* CloudFileUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F644ADD524B2BEBE0006100B /* CloudFileUploader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +26,7 @@
 		F644ADC724B2965F0006100B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F644ADCA24B2965F0006100B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		F644ADCC24B2965F0006100B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F644ADD524B2BEBE0006100B /* CloudFileUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudFileUploader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,6 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F644ADD424B2A8240006100B /* SwiftLogFireCloud in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				F644ADBE24B2965D0006100B /* AppDelegate.swift */,
+				F644ADD524B2BEBE0006100B /* CloudFileUploader.swift */,
 				F644ADC024B2965D0006100B /* SceneDelegate.swift */,
 				F644ADC224B2965D0006100B /* ViewController.swift */,
 				F644ADC424B2965D0006100B /* Main.storyboard */,
@@ -83,6 +88,9 @@
 			dependencies = (
 			);
 			name = SwiftLogFireCloudExampleApp;
+			packageProductDependencies = (
+				F644ADD324B2A8240006100B /* SwiftLogFireCloud */,
+			);
 			productName = SwiftLogFireCloudExampleApp;
 			productReference = F644ADBB24B2965D0006100B /* SwiftLogFireCloudExampleApp.app */;
 			productType = "com.apple.product-type.application";
@@ -111,6 +119,9 @@
 				Base,
 			);
 			mainGroup = F644ADB224B2965D0006100B;
+			packageReferences = (
+				F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */,
+			);
 			productRefGroup = F644ADBC24B2965D0006100B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -139,6 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F644ADC324B2965D0006100B /* ViewController.swift in Sources */,
+				F644ADD624B2BEBE0006100B /* CloudFileUploader.swift in Sources */,
 				F644ADBF24B2965D0006100B /* AppDelegate.swift in Sources */,
 				F644ADC124B2965D0006100B /* SceneDelegate.swift in Sources */,
 			);
@@ -338,6 +350,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "file:///Users/timothywise/development/SwiftLogFireCloud";
+			requirement = {
+				branch = ClientManagedCloudPush;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F644ADD324B2A8240006100B /* SwiftLogFireCloud */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */;
+			productName = SwiftLogFireCloud;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F644ADB324B2965D0006100B /* Project object */;
 }
