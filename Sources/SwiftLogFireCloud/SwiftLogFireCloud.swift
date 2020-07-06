@@ -96,6 +96,10 @@ public class SwiftLogFileCloudManager {
     }
     return makeLogHandler
   }
+
+  public init() {
+
+  }
 }
 
 internal enum Logability {
