@@ -3,8 +3,8 @@
 #endif
 
 /// Class object representing the logging buffer and metadata for writing the buffer to the device local disk.
-internal class LocalLogFile: NSCopying {
-  func copy(with zone: NSZone? = nil) -> Any {
+public class LocalLogFile: NSCopying {
+  public func copy(with zone: NSZone? = nil) -> Any {
     let copy = LocalLogFile(label: label, config: config)
     copy.buffer = buffer
     copy.fileURL = fileURL
