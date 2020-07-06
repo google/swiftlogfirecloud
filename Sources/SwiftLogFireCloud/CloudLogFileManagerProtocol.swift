@@ -6,5 +6,6 @@ public protocol CloudLogFileManagerProtocol {
 }
 
 public protocol CloudFileUploaderProtocol {
-  func uploadFile(_ cloudManager: CloudLogFileManagerProtocol, from localFile: URL, to cloudPath: String)
+  func uploadFile(
+    _ cloudManager: CloudLogFileManagerProtocol, from localFile: URL, to cloudPath: String)
 }
