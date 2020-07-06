@@ -78,9 +78,10 @@ public struct SwiftLogFileCloudConfig {
 }
 
 /// Client created object used bootstrap the logging system.
-class SwfitLogFileCloudManager {
+public class SwiftLogFileCloudManager {
 
-  typealias LogHandlerFactory = (String) -> LogHandler
+  /// Description LogHandler factory method type.
+  public typealias LogHandlerFactory = (String) -> LogHandler
   static var swiftLogFireCloud: SwiftLogFireCloud?
 
   /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
@@ -88,10 +89,10 @@ class SwfitLogFileCloudManager {
   /// - Returns: returns a function that makes a LogHandler.
   public func makeLogHandlerFactory(config: SwiftLogFileCloudConfig) -> LogHandlerFactory {
     func makeLogHandler(label: String) -> LogHandler {
-      SwfitLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
+      SwiftLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
       // SwiftLogFireCloud can't return nil
       // swift-format-ignore: NeverForceUnwrap
-      return SwfitLogFileCloudManager.swiftLogFireCloud!
+      return SwiftLogFileCloudManager.swiftLogFireCloud!
     }
     return makeLogHandler
   }

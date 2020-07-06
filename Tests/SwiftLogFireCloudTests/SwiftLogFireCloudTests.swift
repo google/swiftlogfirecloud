@@ -12,7 +12,7 @@ final class SwiftLogFireCloudTests: XCTestCase {
     logToCloud: true, localFileSizeThresholdToPushToCloud: 100,
     localFileBufferWriteInterval: nil, uniqueID: nil)
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-  let swiftLogFileCloudManager = SwfitLogFileCloudManager()
+  let swiftLogFileCloudManager = SwiftLogFileCloudManager()
   var testFileSystemHelpers: TestFileSystemHelpers!
 
   override func setUp() {
