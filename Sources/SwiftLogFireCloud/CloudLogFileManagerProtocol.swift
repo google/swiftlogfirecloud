@@ -5,7 +5,7 @@ public protocol CloudLogFileManagerProtocol {
   func addFileToCloudPushQueue(localLogFile: LocalLogFile)
 }
 
-public protocol CloudFileUploaderProtocol {
+public protocol CloudFileUploaderProtocol: class {
   func uploadFile(
-    _ cloudManager: CloudLogFileManagerProtocol, from localFile: URL, to cloudPath: String)
+    _ cloudManager: CloudLogFileManagerProtocol, from localFile: LocalLogFile, to cloudPath: String)
 }

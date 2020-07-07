@@ -112,7 +112,7 @@ public class LocalLogFile: NSCopying {
   }
 
   /// Deletes the local file from the filesystem.
-  internal func delete() {
+  public func delete() {
     guard let url = fileURL else { return }
     do {
       try FileManager.default.removeItem(at: url)

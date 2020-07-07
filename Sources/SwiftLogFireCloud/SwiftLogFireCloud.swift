@@ -36,7 +36,15 @@ public struct SwiftLogFileCloudConfig {
 
   /// Boolean value to control whether log files are sent to the cloud when running within a simulator.
   var logToCloudOnSimulator: Bool = false
-  //let storage                   : Storage  //This is a Firebase object.  I don't want the library to depend on firebase, rather want to receive it from the library client.
+
+  /// Object responsible for uploading the local log file to the cloud.
+  ///
+  /// Ideally the library could do this but I don't want the library to depend on firebase,
+  /// rather want to receive it from the client of the library.  But I'm not able to compile against
+  /// those symbols without also linking against the Firestore library which would create
+  /// duplicate symbol issues for theclient app.
+  weak var cloudUploader: CloudFileUploaderProtocol?
+
   internal static let megabyte: Int = 1_048_576
 
   /// Create a new `SwiftLogFileCloudConfig`.
@@ -53,7 +61,7 @@ public struct SwiftLogFileCloudConfig {
     logToCloud: Bool? = nil, localFileSizeThresholdToPushToCloud: Int? = nil,
     localFileBufferWriteInterval: TimeInterval? = nil, uniqueID: String? = nil,
     minFileSystemFreeSpace: Int? = nil, logDirectoryName: String? = nil,
-    logToCloudOnSimulator: Bool? = false
+    logToCloudOnSimulator: Bool? = false, cloudUploader: CloudFileUploaderProtocol?
   ) {
     if let logToCloud = logToCloud {
       self.logToCloud = logToCloud
@@ -74,6 +82,7 @@ public struct SwiftLogFileCloudConfig {
       self.logToCloudOnSimulator = logToCloudOnSimulator
     }
     self.uniqueIDString = uniqueID
+    self.cloudUploader = cloudUploader
   }
 }
 
