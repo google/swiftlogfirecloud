@@ -14,7 +14,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   private var successiveFails: Int = 0
   private var strandedFilesToPush: [LocalLogFile]?
   private var strandedFileTimer: Timer?
-  private var cloudDateFormatter: DateFormatter
+  private var cloudDirectoryNameDateFormatter: DateFormatter
+  private var cloudFileNameDateFormatter: DateFormatter
   private let config: SwiftLogFileCloudConfig
   private let label: String
 
@@ -25,9 +26,13 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     self.label = label
     self.config = config
 
-    cloudDateFormatter = DateFormatter()
-    cloudDateFormatter.timeZone = TimeZone.current
-    cloudDateFormatter.dateFormat = "yyyy-MM-dd"
+    cloudDirectoryNameDateFormatter = DateFormatter()
+    cloudDirectoryNameDateFormatter.timeZone = TimeZone.current
+    cloudDirectoryNameDateFormatter.dateFormat = "yyyy-MM-dd"
+
+    cloudFileNameDateFormatter = DateFormatter()
+    cloudFileNameDateFormatter.timeZone = TimeZone.current
+    cloudFileNameDateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss.SSSZ'"
   }
 
   private func createCloundFilePathAndName(date: Date?) -> String {
@@ -39,8 +44,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
       fileDate = date
     }
 
-    let fileDateString = self.cloudDateFormatter.string(from: fileDate)
-    cloudFilePath += "\(fileDateString)/"
+    let directoryDateString = self.cloudDirectoryNameDateFormatter.string(from: fileDate)
+    cloudFilePath += "\(directoryDateString)/"
 
     if let bundleString = Bundle.main.bundleIdentifier {
       cloudFilePath += "\(bundleString)/"
@@ -61,6 +66,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
       }
     }
     cloudFilePath += "\(label)/"
+
+    let fileDateString = self.cloudFileNameDateFormatter.string(from: fileDate)
     cloudFilePath += "\(fileDateString).log"
     return cloudFilePath
   }

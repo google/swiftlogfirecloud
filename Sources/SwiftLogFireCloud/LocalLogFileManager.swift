@@ -125,7 +125,7 @@ internal class LocalLogFileManager {
       _ = self.assessLocalLogability()
       if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(logability: self.localLogability)
       {
-        self.writeLocalLogFileToDisk()
+        self.writeLocalLogFileToDisk(forceFlushToCloud: true)
       }
       self.localLogFile = self.localLogFile.trimBufferIfNecessary()
     }
