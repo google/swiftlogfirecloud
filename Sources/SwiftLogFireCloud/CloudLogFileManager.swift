@@ -76,6 +76,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   /// - Parameter localLogFile: Reference to LocalLogFile reference with meta data about the local file on disk.
   func writeLogFileToCloud(localLogFile: LocalLogFile) {
     cloudLogQueue.async {
+      //TODO:  this probably should be rate limited since Firebase ratelimits
 
       let fileAttr = localLogFile.getLocalLogFileAttributes()
       guard let fileSize = fileAttr.fileSize, fileSize > 0 else {
