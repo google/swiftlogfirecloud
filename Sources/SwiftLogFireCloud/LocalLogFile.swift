@@ -70,7 +70,6 @@ public class LocalLogFile: NSCopying {
 
     fileString += "-\(label)"
     fileString += ".log"
-    print(fileString)
     //TODO this should always be escaped, but better to be safe here
     if let escapedFileString = fileString.addingPercentEncoding(
       withAllowedCharacters: .urlPathAllowed)

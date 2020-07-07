@@ -77,22 +77,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
       }
       //TODO: use the same file name as local here...
       let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr.creationDate)
-      //            let storageReference = self.storage.reference()
-      //            let cloudReference = storageReference.child(cloudFilePath)
-      //            let uploadTask = cloudReference.putFile(from: localFileURL, metadata: nil) { metadata, error in
-      //                if let error = error {
-      // handle the error, not sure how to cascade the error here since client never knows when log to cloud is
-      // invoked, as the logging is fire and forget on behalf of the client.  Perhaps add Crashlytics non-fatal
-      // error logging for client to monitor incident rates.
-      //                }
-      //            }
-      //            _ = uploadTask.observe(.success) { snapshot in
-      //                self.delegate?.deleteLocalFile(fileURL: localFileURL)
-      //            }
-
-      //            _ = uploadTask.observe(.failure) { snapshot in
-      //                self.addFileToCloudPushQueue(localFileURL: localFileURL)
-      //            }
+      self.config.cloudUploader?.uploadFile(self, from: localLogFile, to: cloudFilePath)
     }
   }
 
