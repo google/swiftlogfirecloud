@@ -17,7 +17,7 @@ public class LocalLogFile: NSCopying {
     return copy
   }
 
-  var fileURL: URL?
+  public var fileURL: URL?
   var bytesWritten: UInt64 = 0
   var firstFileWrite: Date?
   var lastFileWrite: Date?
