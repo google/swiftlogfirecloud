@@ -205,7 +205,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     let localLogFileManager = LocalLogFileManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
-    let logability = localLogFileManager.assessLocalLogability()
+    let logability = localLogFileManager.assessLogability()
 
     XCTAssert(logability == .impaired)
   }
@@ -216,7 +216,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       return
     }
 
-    let logability = localLogFileManager.assessLocalLogability()
+    let logability = localLogFileManager.assessLogability()
 
     XCTAssert(logability == .normal)
   }
@@ -230,15 +230,15 @@ final class LocalLogFileManagerTests: XCTestCase {
     localLogFileManager.localLogFile.lastFileWriteAttempt = Date()
 
     localLogFileManager.localLogFile.lastFileWrite = Date(timeInterval: -900, since: Date())
-    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
+    let unFunctionalLogability = localLogFileManager.assessLogability()
     XCTAssert(unFunctionalLogability == .unfunctional)
 
     localLogFileManager.localLogFile.lastFileWrite = Date(timeInterval: -300, since: Date())
-    let impairedLogability = localLogFileManager.assessLocalLogability()
+    let impairedLogability = localLogFileManager.assessLogability()
     XCTAssert(impairedLogability == .impaired)
 
     localLogFileManager.localLogFile.lastFileWrite = Date(timeInterval: -60, since: Date())
-    let normalLogability = localLogFileManager.assessLocalLogability()
+    let normalLogability = localLogFileManager.assessLogability()
     XCTAssert(normalLogability == .normal)
 
   }
@@ -251,16 +251,16 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     localLogFileManager.localLogFile.lastFileWriteAttempt = Date()
 
-    localLogFileManager.localLogFile.successiveWriteFailures = 100
-    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
+    localLogFileManager.localLogFile.successiveWriteFailures = 12
+    let unFunctionalLogability = localLogFileManager.assessLogability()
     XCTAssert(unFunctionalLogability == .unfunctional)
 
-    localLogFileManager.localLogFile.successiveWriteFailures = 40
-    let impairedLogability = localLogFileManager.assessLocalLogability()
+    localLogFileManager.localLogFile.successiveWriteFailures = 4
+    let impairedLogability = localLogFileManager.assessLogability()
     XCTAssert(impairedLogability == .impaired)
 
-    localLogFileManager.localLogFile.successiveWriteFailures = 10
-    let normalLogability = localLogFileManager.assessLocalLogability()
+    localLogFileManager.localLogFile.successiveWriteFailures = 2
+    let normalLogability = localLogFileManager.assessLogability()
     XCTAssert(normalLogability == .normal)
   }
 

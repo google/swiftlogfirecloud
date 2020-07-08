@@ -72,6 +72,33 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     return cloudFilePath
   }
 
+  /// Determines if the buffer is bigger than the size to push buffer to the cloud.
+  /// - Returns: true if the buffer is larger than the `config.localFileSizeThresholdToPushToCloud`.
+  internal func isNowTheRightTimeToWriteToCloud(_ localLogFile: LocalLogFile) -> Bool {
+    #if targetEnvironment(simulator)
+      if !config.logToCloudOnSimulator { return false }
+    #endif
+    let fileSizeToPush = config.localFileSizeThresholdToPushToCloud
+
+    var acceptableRetryInterval: Double
+    let logability = assessLogability()
+    switch logability {
+    case .normal: acceptableRetryInterval = config.localFileBufferWriteInterval
+    case .unfunctional: acceptableRetryInterval = config.localFileBufferWriteInterval * 10
+    case .impaired: acceptableRetryInterval = config.localFileBufferWriteInterval * 3
+    }
+
+    var sufficientTimeSinceLastWrite: Bool = true
+    if let lastWrite = lastWriteSuccess {
+      sufficientTimeSinceLastWrite = abs(lastWrite.timeIntervalSinceNow) > acceptableRetryInterval
+    }
+
+    switch logability {
+    case .normal: return localLogFile.bytesWritten > fileSizeToPush || sufficientTimeSinceLastWrite
+    case .impaired, .unfunctional: return sufficientTimeSinceLastWrite
+    }
+  }
+
   /// Pushes a  local log file to the cloud configured by the client app.
   /// - Parameter localLogFile: Reference to LocalLogFile reference with meta data about the local file on disk.
   func writeLogFileToCloud(localLogFile: LocalLogFile) {
@@ -86,6 +113,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
       //TODO: use the same file name as local here...
       let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr.creationDate)
       self.config.cloudUploader?.uploadFile(self, from: localLogFile, to: cloudFilePath)
+      self.lastWriteAttempt = Date()
     }
   }
 
@@ -126,6 +154,43 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
         self.strandedFilesToPush?.removeFirst()
       }
     }
+  }
+
+  func reportUploadStatus(_ status: CloudUploadStatus) {
+    switch status {
+    case .success:
+      successiveFails = 0
+      lastWriteSuccess = Date()
+    case .error, .failure:
+      successiveFails += 1
+    }
+  }
+
+  internal func assessLogability() -> Logability {
+    if let lastWriteSuccess = lastWriteSuccess,
+      let lastWriteAttempt = lastWriteAttempt
+    {
+      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt))
+        > config.localFileBufferWriteInterval * 10
+      {
+        return .unfunctional
+      }
+      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt))
+        > config.localFileBufferWriteInterval * 3
+      {
+        return .impaired
+      }
+      return .normal
+    }
+    // if there has been no successful write, then determine viabiilty by how many retries since last success
+    // since the lastWriteAttemp
+    if successiveFails > 10 {
+      return .unfunctional
+    }
+    if successiveFails > 3 {
+      return .impaired
+    }
+    return .normal
   }
 
 }

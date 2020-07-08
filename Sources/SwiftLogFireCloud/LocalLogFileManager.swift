@@ -10,7 +10,6 @@ internal class LocalLogFileManager {
   private var logToCloudOnSimulator = true  // set only when testing the library only.
   private let localLogQueue = DispatchQueue(
     label: "com.leisurehoundsports.swiftfirelogcloud-local", qos: .background)
-  private var localLogability: Logability = .normal
   internal var writeTimer: Timer?
   private var cloudLogfileManager: CloudLogFileManagerProtocol
   private let label: String
@@ -122,13 +121,51 @@ internal class LocalLogFileManager {
 
   @objc private func timedAttemptToWriteToDisk() {
     localLogQueue.async {
-      _ = self.assessLocalLogability()
-      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(logability: self.localLogability)
+      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
+        logability: self.assessLogability())
       {
         self.writeLocalLogFileToDisk(forceFlushToCloud: true)
       }
       self.localLogFile = self.localLogFile.trimBufferIfNecessary()
     }
+  }
+
+  internal func assessLogability() -> Logability {
+    guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.count())
+    else {
+      return .unfunctional
+    }
+    guard isFileSystemFreeSpaceSufficient() else {
+      return .impaired
+    }
+    guard let lastWriteAttempt = localLogFile.lastFileWriteAttempt else {
+      // haven't even tried yet.
+      return .normal
+    }
+
+    // if there is a successful write, check the duration between last attemp & last write,
+    if let lastWriteSuccess = localLogFile.lastFileWrite {
+      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt))
+        > config.localFileBufferWriteInterval * 10
+      {
+        return .unfunctional
+      }
+      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt))
+        > config.localFileBufferWriteInterval * 3
+      {
+        return .impaired
+      }
+      return .normal
+    }
+    // if there has been no successful write, then determine viabiilty by how many retries since last success
+    // since the lastWriteAttemp will be recent
+    if localLogFile.successiveWriteFailures > 10 {
+      return .unfunctional
+    }
+    if localLogFile.successiveWriteFailures > 3 {
+      return .impaired
+    }
+    return .normal
   }
 
   private func freeDiskSize() -> Int64? {
@@ -152,55 +189,13 @@ internal class LocalLogFileManager {
     return true
   }
 
-  internal func assessLocalLogability() -> Logability {
-    guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.count())
-    else {
-      localLogability = .unfunctional
-      return .unfunctional
-    }
-    guard isFileSystemFreeSpaceSufficient() else {
-      localLogability = .impaired
-      return .impaired
-    }
-    guard let lastWriteAttempt = localLogFile.lastFileWriteAttempt else {
-      localLogability = .normal
-      return .normal
-    }  // haven't even tried yet.
-
-    // if there is a successful write, check the duration between last attemp & last write,
-    if let lastWriteSuccess = localLogFile.lastFileWrite {
-      //TODO: make these values default but allow override on init.
-      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt)) > 600.0 {
-        localLogability = .unfunctional
-        return localLogability
-      }
-      if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt)) > 180.0 {
-        localLogability = .impaired
-        return localLogability
-      }
-      localLogability = .normal
-      return localLogability
-    }
-    // if there has been no successful write, then determine viabiilty by how many retries since last success
-    // since the lastWriteAttemp will be recent
-    if localLogFile.successiveWriteFailures > 60 {
-      localLogability = .unfunctional
-      return localLogability
-    }
-    if localLogFile.successiveWriteFailures > 20 {
-      localLogability = .impaired
-      return localLogability
-    }
-    localLogability = .normal
-    return localLogability
-  }
-
   private func writeLocalLogFileToDisk(forceFlushToCloud: Bool = false) {
     createLocalLogDirectory()
-    localLogFile.writeLogFileToDisk(shouldSychronize: forceFlushToCloud)
 
     let amIFlushingToCloud =
-      forceFlushToCloud || localLogFile.isNowTheRightTimeToLogLocalFileToCloud()
+      forceFlushToCloud || cloudLogfileManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+
+    localLogFile.writeLogFileToDisk(shouldSychronize: amIFlushingToCloud)
 
     if amIFlushingToCloud {
       if let localFileToPush = localLogFile.copy() as? LocalLogFile {
@@ -215,9 +210,8 @@ internal class LocalLogFileManager {
       guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
       self.localLogFile.append(msgData)
 
-      //TODO: assess local logability here?
-      if !self.isFileSystemFreeSpaceSufficient() { return }
-      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(logability: self.localLogability)
+      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
+        logability: self.assessLogability())
       {
         self.writeLocalLogFileToDisk()
       }

@@ -120,21 +120,6 @@ public class LocalLogFile: NSCopying {
     }
   }
 
-  /// Determines if the buffer is bigger than the size to push buffer to the cloud.
-  /// - Returns: true if the buffer is larger than the `config.localFileSizeThresholdToPushToCloud`.
-  internal func isNowTheRightTimeToLogLocalFileToCloud() -> Bool {
-    #if targetEnvironment(simulator)
-      if !config.logToCloudOnSimulator { return false }
-    #endif
-    let fileSizeToPush = config.localFileSizeThresholdToPushToCloud
-    //TODO: This is only for testing the library development
-    //        #if targetEnvironment(simulator)
-    //            fileSizeToPush = 1024 * 64
-    //        #endif
-
-    return bytesWritten > fileSizeToPush
-  }
-
   /// If the buffer has grown grossly larger than the writable size, abaondon the buffer & delete its local file if it exists
   /// - Returns: returns self if not trimmed, a new `LocalLogFile` if trimmed.
   internal func trimBufferIfNecessary() -> LocalLogFile {
@@ -162,9 +147,9 @@ public class LocalLogFile: NSCopying {
 
     let acceptableRetryInterval: Double
     switch logability {
-    case .normal: acceptableRetryInterval = 60.0
-    case .impaired: acceptableRetryInterval = 180.0
-    case .unfunctional: acceptableRetryInterval = 600.0
+    case .normal: acceptableRetryInterval = config.localFileBufferWriteInterval
+    case .impaired: acceptableRetryInterval = config.localFileBufferWriteInterval * 3
+    case .unfunctional: acceptableRetryInterval = config.localFileBufferWriteInterval * 10
     }
 
     var sufficientTimeSinceLastWrite: Bool = true
