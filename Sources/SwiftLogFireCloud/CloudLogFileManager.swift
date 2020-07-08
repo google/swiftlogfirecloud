@@ -88,8 +88,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     case .impaired: acceptableRetryInterval = config.localFileBufferWriteInterval * 3
     }
 
-    var sufficientTimeSinceLastWrite: Bool = true
-    if let lastWrite = lastWriteSuccess {
+    var sufficientTimeSinceLastWrite: Bool = false
+    if let lastWrite = lastWriteAttempt {
       sufficientTimeSinceLastWrite = abs(lastWrite.timeIntervalSinceNow) > acceptableRetryInterval
     }
 

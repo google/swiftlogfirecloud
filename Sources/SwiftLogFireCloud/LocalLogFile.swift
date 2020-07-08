@@ -152,8 +152,8 @@ public class LocalLogFile: NSCopying {
     case .unfunctional: acceptableRetryInterval = config.localFileBufferWriteInterval * 10
     }
 
-    var sufficientTimeSinceLastWrite: Bool = true
-    if let lastWrite = lastFileWrite {
+    var sufficientTimeSinceLastWrite: Bool = false
+    if let lastWrite = lastFileWriteAttempt {
       sufficientTimeSinceLastWrite = abs(lastWrite.timeIntervalSinceNow) > acceptableRetryInterval
     }
 
