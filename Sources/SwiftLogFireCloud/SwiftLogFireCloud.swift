@@ -79,8 +79,12 @@ public class SwiftLogFireCloud: LogHandler {
   #endif
 
   public func log(
-    level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: String,
-    function: String, line: UInt
+    level: Logger.Level,
+    message: Logger.Message,
+    metadata: Logger.Metadata?,
+    file: String = #file,
+    function: String = #function,
+    line: UInt = #line
   ) {
     logHandlerSerialQueue.async {
 
