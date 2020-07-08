@@ -16,13 +16,13 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   private var strandedFileTimer: Timer?
   private var cloudDirectoryNameDateFormatter: DateFormatter
   private var cloudFileNameDateFormatter: DateFormatter
-  private let config: SwiftLogFileCloudConfig
+  private let config: SwiftLogFireCloudConfig
   private let label: String
 
   private let cloudLogQueue = DispatchQueue(
     label: "com.leisurehoundsports.swiftfirelogcloud-remove", qos: .background)
 
-  init(label: String, config: SwiftLogFileCloudConfig) {
+  init(label: String, config: SwiftLogFireCloudConfig) {
     self.label = label
     self.config = config
 

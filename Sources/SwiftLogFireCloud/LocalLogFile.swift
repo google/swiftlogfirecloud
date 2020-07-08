@@ -25,7 +25,7 @@ public class LocalLogFile: NSCopying {
   var successiveWriteFailures: Int = 0
 
   internal var buffer: Data = Data()
-  private let config: SwiftLogFileCloudConfig
+  private let config: SwiftLogFireCloudConfig
   /// If the log file buffer grows beyond this size, the log file is abandoned.
   private let bufferSizeToGiveUp: Int
   private let label: String
@@ -96,7 +96,7 @@ public class LocalLogFile: NSCopying {
     }
   }
 
-  init(label: String, config: SwiftLogFileCloudConfig) {
+  init(label: String, config: SwiftLogFireCloudConfig) {
     self.config = config
     self.label = label
     self.bufferSizeToGiveUp = 4 * config.localFileSizeThresholdToPushToCloud

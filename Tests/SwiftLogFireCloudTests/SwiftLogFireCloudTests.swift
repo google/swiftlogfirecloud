@@ -8,9 +8,10 @@ var logger: Logger?
 
 final class SwiftLogFireCloudTests: XCTestCase {
 
-  let config = SwiftLogFileCloudConfig(
-    logToCloud: true, localFileSizeThresholdToPushToCloud: 100,
-    localFileBufferWriteInterval: nil, uniqueID: nil)
+  let config = SwiftLogFireCloudConfig(
+    logToCloud: true,
+    localFileSizeThresholdToPushToCloud: 100,
+    cloudUploader: nil)
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   let swiftLogFileCloudManager = SwiftLogFileCloudManager()
   var testFileSystemHelpers: TestFileSystemHelpers!

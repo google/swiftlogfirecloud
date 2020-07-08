@@ -7,10 +7,10 @@ final class LocalLogFileManagerTests: XCTestCase {
   var localLogFileManager: LocalLogFileManager!
   var fakeCloudLogFileManager: FakeCloudLogFileManager?
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-  let config = SwiftLogFileCloudConfig(
+  let config = SwiftLogFireCloudConfig(
     logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
     uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
-    logToCloudOnSimulator: false)
+    logToCloudOnSimulator: false, cloudUploader: nil)
   var testFileSystemHelpers: TestFileSystemHelpers!
   let dummyLabel = "ManagerWriting"
 
@@ -138,7 +138,7 @@ final class LocalLogFileManagerTests: XCTestCase {
   func testIsFileSystemFreeSpaceSufficeintWhenNot() {
     var config = self.config
     // FLAKY: this will fail when devices and simulators ship with 10PB. But I'm ok with the risk for now...
-    config.minFileSystemFreeSpace = SwiftLogFileCloudConfig.megabyte * 10_000_000_000
+    config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
@@ -168,9 +168,9 @@ final class LocalLogFileManagerTests: XCTestCase {
 
   func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
 
-    let config = SwiftLogFileCloudConfig(
+    let config = SwiftLogFireCloudConfig(
       logToCloud: true, localFileSizeThresholdToPushToCloud: 100, uniqueID: "testDevice",
-      logDirectoryName: "TestLogs", logToCloudOnSimulator: true)
+      logDirectoryName: "TestLogs", logToCloudOnSimulator: true, cloudUploader: nil)
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(
@@ -199,7 +199,7 @@ final class LocalLogFileManagerTests: XCTestCase {
   func testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired() {
     var config = self.config
     // FLAKY: this will fail when devices and simulators ship with 10PB.
-    config.minFileSystemFreeSpace = SwiftLogFileCloudConfig.megabyte * 10_000_000_000
+    config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = LocalLogFileManager(

@@ -4,9 +4,10 @@ import XCTest
 
 class LocalLogFileTests: XCTestCase {
 
-  let config = SwiftLogFileCloudConfig(
+  let config = SwiftLogFireCloudConfig(
     logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
-    uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs")
+    uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
+    cloudUploader: nil)
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   var testLogFile: LocalLogFile!
   var testFileSystemHelpers: TestFileSystemHelpers!

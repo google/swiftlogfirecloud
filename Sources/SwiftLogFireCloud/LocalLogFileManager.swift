@@ -4,7 +4,7 @@
 
 internal class LocalLogFileManager {
 
-  private var config: SwiftLogFileCloudConfig
+  private var config: SwiftLogFireCloudConfig
   internal var localLogFile: LocalLogFile
 
   private var logToCloudOnSimulator = true  // set only when testing the library only.
@@ -22,7 +22,7 @@ internal class LocalLogFileManager {
   }
 
   init(
-    label: String, config: SwiftLogFileCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol
+    label: String, config: SwiftLogFireCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol
   ) {
 
     self.label = label

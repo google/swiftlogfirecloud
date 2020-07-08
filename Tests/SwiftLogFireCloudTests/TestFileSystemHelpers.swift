@@ -6,9 +6,9 @@ import XCTest
 class TestFileSystemHelpers {
 
   let path: URL
-  let config: SwiftLogFileCloudConfig
+  let config: SwiftLogFireCloudConfig
 
-  init(path: URL, config: SwiftLogFileCloudConfig) {
+  init(path: URL, config: SwiftLogFireCloudConfig) {
     self.path = path
     self.config = config
   }
