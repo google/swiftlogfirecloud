@@ -1,10 +1,3 @@
-//
-//  SwiftLogFireCloudConfig.swift
-//  SwiftLogFireCloud
-//
-//  Created by Timothy Wise on 7/7/20.
-//
-
 import Foundation
 
 /// Configuration struct to configure the local and cloud logging logic.

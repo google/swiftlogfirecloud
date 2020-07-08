@@ -1,10 +1,10 @@
 # SwiftLogFireCloud
 
 
-This library can be used as an implementation of SwiftLog that captures console logs from iOS and macOS apps and 
+This library can be used as an implementation of SwiftLog that captures console logs from iOS and (TODO: macOS) apps and 
 pushes them to Firebase Cloud Storage as flat files for later review.  It has the interent bias to retain a positive user experience
 of the client app and therefore opts to lose logs over consuming badnwidth or excesseive retry failure processing.  Controlling 
-whether the library will log to the cloud can be controlled at runtime by the client app and even remotely via a Firestore doc listener, an exercise 
+whether the library will log to the cloud can be (TODO: controlled at runtime) by the client app and even remotely via a Firestore doc listener, an exercise 
 left to the reader
 
 
