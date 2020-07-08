@@ -5,9 +5,8 @@
 internal class LocalLogFileManager {
 
   private var config: SwiftLogFireCloudConfig
-  internal var localLogFile: LocalLogFile
+  internal var localLogFile: LocalLogFile?
 
-  private var logToCloudOnSimulator = true  // set only when testing the library only.
   private let localLogQueue = DispatchQueue(
     label: "com.leisurehoundsports.swiftfirelogcloud-local", qos: .background)
   internal var writeTimer: Timer?
@@ -27,9 +26,6 @@ internal class LocalLogFileManager {
     self.label = label
     self.config = config
     self.cloudLogfileManager = cloudLogfileManager
-
-    // TODO: Defer this until the first log message, which may be well after startup
-    self.localLogFile = LocalLogFile(label: label, config: config)
 
     writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
 
@@ -108,7 +104,7 @@ internal class LocalLogFileManager {
   @objc internal func processStrandedFilesAtStartup(_ completionForTesting: (() -> Void)? = nil) {
     localLogQueue.async {
       for localFoundFile in self.retrieveLocalLogFileListOnDisk()
-      where localFoundFile.fileURL != self.localLogFile.fileURL {
+      where localFoundFile.fileURL != self.localLogFile?.fileURL {
         if self.config.logToCloud {
           self.cloudLogfileManager.addFileToCloudPushQueue(localLogFile: localFoundFile)
         } else {
@@ -121,16 +117,18 @@ internal class LocalLogFileManager {
 
   @objc private func timedAttemptToWriteToDisk() {
     localLogQueue.async {
-      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
+      guard let localLogFile = self.localLogFile else { return }
+      if localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
         logability: self.assessLogability())
       {
         self.writeLocalLogFileToDisk(forceFlushToCloud: true)
       }
-      self.localLogFile = self.localLogFile.trimBufferIfNecessary()
+      self.localLogFile = localLogFile.trimBufferIfNecessary()
     }
   }
 
   internal func assessLogability() -> Logability {
+    guard let localLogFile = localLogFile else { return .normal }
     guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.count())
     else {
       return .unfunctional
@@ -190,6 +188,7 @@ internal class LocalLogFileManager {
   }
 
   private func writeLocalLogFileToDisk(forceFlushToCloud: Bool = false) {
+    guard let localLogFile = localLogFile else { return }
     createLocalLogDirectory()
 
     let amIFlushingToCloud =
@@ -201,21 +200,24 @@ internal class LocalLogFileManager {
       if let localFileToPush = localLogFile.copy() as? LocalLogFile {
         cloudLogfileManager.writeLogFileToCloud(localLogFile: localFileToPush)
       }
-      localLogFile = LocalLogFile(label: label, config: config)
+      self.localLogFile = LocalLogFile(label: label, config: config)
       localLogFile.lastFileWrite = Date()
     }
   }
   func log(msg: String) {
     localLogQueue.async {
       guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
-      self.localLogFile.append(msgData)
+      if self.localLogFile == nil {
+        self.localLogFile = LocalLogFile(label: self.label, config: self.config)
+      }
+      self.localLogFile?.append(msgData)
 
-      if self.localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
-        logability: self.assessLogability())
+      if self.localLogFile?.isNowTheRightTimeToWriteLogToLocalFile(
+        logability: self.assessLogability()) ?? false
       {
         self.writeLocalLogFileToDisk()
       }
-      self.localLogFile = self.localLogFile.trimBufferIfNecessary()
+      self.localLogFile = self.localLogFile?.trimBufferIfNecessary()
     }
   }
 }
