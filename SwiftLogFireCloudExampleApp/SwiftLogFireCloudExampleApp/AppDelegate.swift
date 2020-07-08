@@ -14,6 +14,7 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
   var logger: Logger?
+  var altLogger: Logger?
   var logUploader: SwiftLogFireCloudUploader?
 
   func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -26,12 +27,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     //Configure and initialize the SwiftLogFireCloud library
     //Note:  localFileSizeThresholdToPushToCloud is artificially low to see the sample app in action
-    let config = SwiftLogFileCloudConfig(
-      logToCloud: true, localFileSizeThresholdToPushToCloud: 1024,
-      localFileBufferWriteInterval: nil, uniqueID: nil, logToCloudOnSimulator: true, cloudUploader: logUploader)
+    let config = SwiftLogFireCloudConfig(
+      logToCloud: true,
+      localFileSizeThresholdToPushToCloud: 1024,
+      logToCloudOnSimulator: true,
+      cloudUploader: logUploader)
     let swiftLogFileCloudManager = SwiftLogFileCloudManager()
     
-    //Bootstrap SwiftLog
+    //Bootstrap SwiftLog...make sure this is only run once
     LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
     
     //Create a logger
@@ -46,7 +49,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       //Firebase Storage rate limits
       let delay = DispatchTime.now().advanced(by: .seconds(i*1))
       DispatchQueue.main.asyncAfter(deadline: delay) {
-        self.logger?.info("\(i) This is anothere short message, which shoud eclipse the file threshold for cloud upload after its repeated logs")
+        self.logger?.info("\(i) This is another short message, which shoud eclipse the file threshold for cloud upload after its repeated logs")
+      }
+    }
+    
+    //Create another logger, with a different label
+    altLogger = Logger(label: "SwiftLogFireCloudAlternativeExampleAppLogger")
+
+    //Log messages to altLogger over time
+    for i in 1...50 {
+      //Async the writes in this example app given a trivially low localFileSizeThresholdToPushToCloud as
+      //Firebase Storage rate limits
+      let delay = DispatchTime.now().advanced(by: .seconds(i*1))
+      DispatchQueue.main.asyncAfter(deadline: delay) {
+        self.altLogger?.info("\(i) I'm writing to the alternate logger, the files on disk and in the cloud should not collide with messages polluting each other")
       }
     }
     return true
