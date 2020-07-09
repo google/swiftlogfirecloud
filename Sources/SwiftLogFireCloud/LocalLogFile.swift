@@ -182,7 +182,7 @@ public class LocalLogFile: NSCopying {
 
   /// Writes the logfile to the disk.
   /// - Parameter shouldSychronize: `Bool` to determine if the file should be synchronized to disk in preparation for push to cloud.
-  internal func writeLogFileToDisk(shouldSychronize: Bool = false) {
+  internal func writeLogFileToDisk(completion: (() -> Void)? = nil) {
 
     lastFileWriteAttempt = Date()
 
@@ -192,13 +192,24 @@ public class LocalLogFile: NSCopying {
 
     switch isFileExistingOnDiskAlready {
     case true:
-      appendToExistingLocalLogFile(fileURL: fileURL, closeAndSynchronize: shouldSychronize)
+      appendToExistingLocalLogFile(fileURL: fileURL)
     case false:
       firstWriteOfLocalLogFile(fileURL: fileURL)
     }
+    completion?()
+  }
+  
+  internal func closeAndSycnhronize() {
+    guard let fileURL = fileURL else { return }
+    guard let fileHandle = try? FileHandle(forUpdating: fileURL) else { return }
+    
+    if #available(iOS 13.0, *) {
+      try? fileHandle.synchronize()
+      try? fileHandle.close()
+    }
   }
 
-  private func appendToExistingLocalLogFile(fileURL: URL, closeAndSynchronize: Bool) {
+  private func appendToExistingLocalLogFile(fileURL: URL) {
     do {
       let fileHandle = try FileHandle(forUpdating: fileURL)
       fileHandle.seekToEndOfFile()
@@ -207,17 +218,6 @@ public class LocalLogFile: NSCopying {
       buffer = Data()
       lastFileWrite = Date()
       successiveWriteFailures = 0
-
-      if closeAndSynchronize {
-        do {
-          if #available(iOS 13.0, *) {
-            try fileHandle.synchronize()
-            try fileHandle.close()
-          }
-        } catch {
-          // cest la vie
-        }
-      }
     } catch {
       successiveWriteFailures += 1
     }

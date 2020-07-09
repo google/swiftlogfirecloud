@@ -37,7 +37,7 @@ public class SwiftLogFireCloud: LogHandler {
 
   private var label: String
   private var config: SwiftLogFireCloudConfig
-  private var localFileLogManager: LocalLogFileManager
+  private var localFileLogManager: SwiftLogManager
   private var logMessageDateFormatter = DateFormatter()
   private var logHandlerSerialQueue: DispatchQueue
   private var cloudLogFileManager: CloudLogFileManagerProtocol
@@ -58,7 +58,7 @@ public class SwiftLogFireCloud: LogHandler {
       cloudLogfileManager == nil
       ? CloudLogFileManager(label: label, config: config) : cloudLogfileManager!
 
-    localFileLogManager = LocalLogFileManager(
+    localFileLogManager = SwiftLogManager(
       label: label, config: config, cloudLogfileManager: self.cloudLogFileManager)
     logHandlerSerialQueue = DispatchQueue(
       label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)

@@ -4,7 +4,7 @@ import XCTest
 
 final class LocalLogFileManagerTests: XCTestCase {
 
-  var localLogFileManager: LocalLogFileManager!
+  var localLogFileManager: SwiftLogManager!
   var fakeCloudLogFileManager: FakeCloudLogFileManager?
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   let config = SwiftLogFireCloudConfig(
@@ -21,7 +21,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       XCTFail("fake cloud log file manager failed to initialize")
       return
     }
-    localLogFileManager = LocalLogFileManager(
+    localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
@@ -96,7 +96,7 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     // create a special localLogFileManager with an updated config
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = LocalLogFileManager(
+    let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
     let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
@@ -141,7 +141,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = LocalLogFileManager(
+    let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
   }
@@ -173,7 +173,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       logDirectoryName: "TestLogs", logToCloudOnSimulator: true, cloudUploader: nil)
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = LocalLogFileManager(
+    let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
     localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
@@ -184,7 +184,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     let bufferStr = testFileSystemHelpers.flood(
       localLogFile: localLogFileManager.localLogFile!)
     localLogFileManager.localLogFile!.buffer = (bufferStr?.data(using: .utf8))!
-    localLogFileManager.localLogFile!.writeLogFileToDisk(shouldSychronize: true)
+    localLogFileManager.localLogFile!.writeLogFileToDisk()
 
     let expectation = XCTestExpectation(
       description: "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer")
@@ -203,10 +203,10 @@ final class LocalLogFileManagerTests: XCTestCase {
     config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
 
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = LocalLogFileManager(
+    let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
-    let logability = localLogFileManager.assessLogability()
+    let logability = localLogFileManager.assessLocalLogability()
 
     XCTAssert(logability == .impaired)
   }
@@ -217,7 +217,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       return
     }
 
-    let logability = localLogFileManager.assessLogability()
+    let logability = localLogFileManager.assessLocalLogability()
 
     XCTAssert(logability == .normal)
   }
@@ -231,15 +231,15 @@ final class LocalLogFileManagerTests: XCTestCase {
     localLogFileManager.localLogFile!.lastFileWriteAttempt = Date()
 
     localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -900, since: Date())
-    let unFunctionalLogability = localLogFileManager.assessLogability()
+    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(unFunctionalLogability == .unfunctional)
 
     localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -300, since: Date())
-    let impairedLogability = localLogFileManager.assessLogability()
+    let impairedLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(impairedLogability == .impaired)
 
     localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -60, since: Date())
-    let normalLogability = localLogFileManager.assessLogability()
+    let normalLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(normalLogability == .normal)
 
   }
@@ -253,15 +253,15 @@ final class LocalLogFileManagerTests: XCTestCase {
     localLogFileManager.localLogFile!.lastFileWriteAttempt = Date()
 
     localLogFileManager.localLogFile!.successiveWriteFailures = 12
-    let unFunctionalLogability = localLogFileManager.assessLogability()
+    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(unFunctionalLogability == .unfunctional)
 
     localLogFileManager.localLogFile!.successiveWriteFailures = 4
-    let impairedLogability = localLogFileManager.assessLogability()
+    let impairedLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(impairedLogability == .impaired)
 
     localLogFileManager.localLogFile!.successiveWriteFailures = 2
-    let normalLogability = localLogFileManager.assessLogability()
+    let normalLogability = localLogFileManager.assessLocalLogability()
     XCTAssert(normalLogability == .normal)
   }
 
