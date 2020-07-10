@@ -61,7 +61,7 @@ public class SwiftLogFireCloud: LogHandler {
     localFileLogManager = SwiftLogManager(
       label: label, config: config, cloudLogfileManager: self.cloudLogFileManager)
     logHandlerSerialQueue = DispatchQueue(
-      label: "com.leisurehoundsports.swiftlogfirecloud", qos: .background)
+      label: "com.google.firebase.swiftlogfirecloud", qos: .background)
   }
 
   #if DEBUG

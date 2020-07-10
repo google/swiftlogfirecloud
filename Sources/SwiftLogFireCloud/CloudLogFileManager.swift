@@ -20,7 +20,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   private let label: String
 
   private let cloudLogQueue = DispatchQueue(
-    label: "com.leisurehoundsports.swiftfirelogcloud-remove", qos: .background)
+    label: "com.google.firebase.swiftfirelogcloud-cloud", qos: .background)
 
   init(label: String, config: SwiftLogFireCloudConfig) {
     self.label = label

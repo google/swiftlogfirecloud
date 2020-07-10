@@ -8,7 +8,7 @@ internal class SwiftLogManager {
   internal var localLogFile: LocalLogFile?
 
   private let localLogQueue = DispatchQueue(
-    label: "com.leisurehoundsports.swiftfirelogcloud-local", qos: .background)
+    label: "com.google.firebase.swiftfirelogcloud-local", qos: .background)
   internal var writeTimer: Timer?
   private var cloudLogfileManager: CloudLogFileManagerProtocol
   private let label: String
