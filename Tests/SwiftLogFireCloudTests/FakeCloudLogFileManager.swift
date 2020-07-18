@@ -15,13 +15,9 @@ class FakeCloudLogFileManager: CloudLogFileManagerProtocol {
   }
 
   func writeLogFileToCloud(localLogFile: LocalLogFile) {
-    if let fileURL = localLogFile.fileURL {
-      recentWrittenFiles.append(fileURL)
-    }
+    recentWrittenFiles.append(localLogFile.fileURL)
   }
   func addFileToCloudPushQueue(localLogFile: LocalLogFile) {
-    if let fileURL = localLogFile.fileURL {
-      cloudPushQueue.append(fileURL)
-    }
+    cloudPushQueue.append(localLogFile.fileURL)
   }
 }

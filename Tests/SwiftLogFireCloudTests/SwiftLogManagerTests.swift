@@ -2,9 +2,9 @@ import XCTest
 
 @testable import SwiftLogFireCloud
 
-final class LocalLogFileManagerTests: XCTestCase {
+final class SwiftLogManagerTests: XCTestCase {
 
-  var localLogFileManager: SwiftLogManager!
+  var localSwiftLogManager: SwiftLogManager!
   var fakeCloudLogFileManager: FakeCloudLogFileManager?
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   let config = SwiftLogFireCloudConfig(
@@ -13,6 +13,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     logToCloudOnSimulator: false, cloudUploader: nil)
   var testFileSystemHelpers: TestFileSystemHelpers!
   let dummyLabel = "ManagerWriting"
+  let queue = DispatchQueue(label: "com.google.firebase.swiftlogfirecloud-swiftlogmanager")
 
   override func setUp() {
 
@@ -21,7 +22,7 @@ final class LocalLogFileManagerTests: XCTestCase {
       XCTFail("fake cloud log file manager failed to initialize")
       return
     }
-    localLogFileManager = SwiftLogManager(
+    localSwiftLogManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
@@ -31,12 +32,67 @@ final class LocalLogFileManagerTests: XCTestCase {
     testFileSystemHelpers.deleteAllLogFiles()
     testFileSystemHelpers.removeLogDirectory()
   }
+  
+  func testInit() {
+    // should set config, label & cloudFileManager are set
+    // should confirm observers are set?
+    // should confirm that stranded files are pushed to queue
+    //
+  }
+  
+  func testAppWillResumeActiveWhenTimerStoppedShouldRestartWriteTimer() {
 
+    if localSwiftLogManager.writeTimer?.isValid ?? false {
+      localSwiftLogManager.writeTimer?.invalidate()
+    }
+
+    localSwiftLogManager.appWillResumeActive()
+
+    XCTAssertTrue(localSwiftLogManager.writeTimer?.isValid ?? false)
+  }
+
+  func testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer() {
+
+    XCTAssertTrue(localSwiftLogManager.writeTimer?.isValid ?? false)
+
+    localSwiftLogManager.appWillResumeActive()
+
+    XCTAssertTrue(localSwiftLogManager.writeTimer?.isValid ?? false)
+  }
+
+  func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
+
+    let config = SwiftLogFireCloudConfig(
+      logToCloud: true, localFileSizeThresholdToPushToCloud: 100, uniqueID: "testDevice",
+      logDirectoryName: "TestLogs", logToCloudOnSimulator: true, cloudUploader: nil)
+
+    let fakeCloudLogFileManager = FakeCloudLogFileManager()
+    let localLogFileManager = SwiftLogManager(
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
+
+    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    guard let localFileURL = localLogFileManager.localLogFile?.fileURL else {
+      XCTFail("No local file created")
+      return
+    }
+    _ = testFileSystemHelpers.flood(localLogFile: localLogFileManager.localLogFile!)
+
+    let expectation = XCTestExpectation(
+      description: "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer")
+    localLogFileManager.appWillResignActive {
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 5.0)
+    XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
+    XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
+  }
+  
   func testCreateLocalLogDirectorySuccessful() {
     //Setup creates the directory, remove it first
     testFileSystemHelpers.removeLogDirectory()
 
-    localLogFileManager.createLocalLogDirectory()
+    localSwiftLogManager.createLocalLogDirectory()
 
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     XCTAssert(paths.count > 0)
@@ -52,8 +108,8 @@ final class LocalLogFileManagerTests: XCTestCase {
 
   func testRetreieveLocalLogFileListOnDiskWhenEmptyShouldFindDirectoryContentsNil() {
 
-    localLogFileManager.createLocalLogDirectory()
-    let urls = localLogFileManager.retrieveLocalLogFileListOnDisk()
+    localSwiftLogManager.createLocalLogDirectory()
+    let urls = localSwiftLogManager.retrieveLocalLogFileListOnDisk()
 
     XCTAssert(urls.count == 0)
   }
@@ -63,11 +119,11 @@ final class LocalLogFileManagerTests: XCTestCase {
     let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
     let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
 
-    let logFiles = localLogFileManager.retrieveLocalLogFileListOnDisk()
+    let logFiles = localSwiftLogManager.retrieveLocalLogFileListOnDisk()
 
     var logFileURLs = Set<URL>()
-    for logFile in logFiles where logFile.fileURL != nil {
-      logFileURLs.insert(logFile.fileURL!)
+    for logFile in logFiles {
+      logFileURLs.insert(logFile.fileURL)
     }
 
     XCTAssert(logFileURLs.contains(fileURL1))
@@ -83,7 +139,7 @@ final class LocalLogFileManagerTests: XCTestCase {
     let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
 
     // the logger init is setup to not log to cloud, so it should just delete files.
-    localLogFileManager.processStrandedFilesAtStartup {
+    localSwiftLogManager.processStrandedFilesAtStartup {
       XCTAssertTrue(self.testFileSystemHelpers.isLogFileDirectoryEmpty())
       expectation.fulfill()
     }
@@ -115,6 +171,74 @@ final class LocalLogFileManagerTests: XCTestCase {
     wait(for: [expectation], timeout: 5.0)
 
   }
+  
+  func testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired() {
+    var config = self.config
+    // FLAKY: this will fail when devices and simulators ship with 10PB.
+    config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
+
+    let fakeCloudLogFileManager = FakeCloudLogFileManager()
+    let localLogFileManager = SwiftLogManager(
+      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
+    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    let logability = localLogFileManager.assessLocalLogability()
+
+    XCTAssert(logability == .impaired)
+  }
+
+  func testAssessLocalLogabilityWhenNoWritesAttemptedShouldBeNormal() {
+    guard let localLogFileManager = localSwiftLogManager else {
+      XCTFail()
+      return
+    }
+
+    let logability = localLogFileManager.assessLocalLogability()
+
+    XCTAssert(logability == .normal)
+  }
+
+  func testAssessLocalLogabilityWhenLastWriteIsAllCasesShouldReturnAllLogabilities() {
+    guard let localSwiftLogManager = localSwiftLogManager else {
+      XCTFail()
+      return
+    }
+    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localSwiftLogManager.lastFileWriteAttempt = Date()
+
+    localSwiftLogManager.lastFileWrite = Date(timeInterval: -900, since: Date())
+    let unFunctionalLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(unFunctionalLogability == .unfunctional)
+
+    localSwiftLogManager.lastFileWrite = Date(timeInterval: -300, since: Date())
+    let impairedLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(impairedLogability == .impaired)
+
+    localSwiftLogManager.lastFileWrite = Date(timeInterval: -60, since: Date())
+    let normalLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(normalLogability == .normal)
+
+  }
+
+  func testAssessLocalLogabilityWhenSuccessiveFailuresAllCasesShouldReturnAllLogabilites() {
+    guard let localSwiftLogManager = localSwiftLogManager else {
+      XCTFail()
+      return
+    }
+    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localSwiftLogManager.lastFileWriteAttempt = Date()
+
+    localSwiftLogManager.successiveWriteFailures = 120
+    let unFunctionalLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(unFunctionalLogability == .unfunctional)
+
+    localSwiftLogManager.successiveWriteFailures = 16
+    let impairedLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(impairedLogability == .impaired)
+
+    localSwiftLogManager.successiveWriteFailures = 2
+    let normalLogability = localSwiftLogManager.assessLocalLogability()
+    XCTAssert(normalLogability == .normal)
+  }
 
   // MARK: testIsFileSystemFreeSpaceSufficient()
   func testIsFileSystemFreeSpaceSufficent() {
@@ -129,9 +253,9 @@ final class LocalLogFileManagerTests: XCTestCase {
 
     XCTAssert(
       (totalDiskSpaceInBytes > 20 * 1_048_576
-        && localLogFileManager.isFileSystemFreeSpaceSufficient())
+        && localSwiftLogManager.isFileSystemFreeSpaceSufficient())
         || (totalDiskSpaceInBytes < 20 * 1_048_576
-          && !localLogFileManager.isFileSystemFreeSpaceSufficient())
+          && !localSwiftLogManager.isFileSystemFreeSpaceSufficient())
     )
   }
 
@@ -145,124 +269,21 @@ final class LocalLogFileManagerTests: XCTestCase {
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
   }
-
-  func testAppWillResumeActiveWhenTimerStoppedShouldRestartWriteTimer() {
-
-    if localLogFileManager.writeTimer?.isValid ?? false {
-      localLogFileManager.writeTimer?.invalidate()
-    }
-
-    localLogFileManager.appWillResumeActive()
-
-    XCTAssertTrue(localLogFileManager.writeTimer?.isValid ?? false)
+  
+  func testQueueLocalFileForCloudWritesLocalLogFiletoCloud() {
+    // should show the file as pushed in fake cloud manager
   }
-
-  func testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer() {
-
-    XCTAssertTrue(localLogFileManager.writeTimer?.isValid ?? false)
-
-    localLogFileManager.appWillResumeActive()
-
-    XCTAssertTrue(localLogFileManager.writeTimer?.isValid ?? false)
+  
+  func testRetryWritingImpairedMessagesActuallyWritesImpairedMessages() {
+    // should attempt a write, and if successful the file has data appended or thee writeFailureCount is incremented.
   }
-
-  func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
-
-    let config = SwiftLogFireCloudConfig(
-      logToCloud: true, localFileSizeThresholdToPushToCloud: 100, uniqueID: "testDevice",
-      logDirectoryName: "TestLogs", logToCloudOnSimulator: true, cloudUploader: nil)
-
-    let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = SwiftLogManager(
-      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
-
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
-    guard let localFileURL = localLogFileManager.localLogFile?.fileURL else {
-      XCTFail("No local file created")
-      return
-    }
-    let bufferStr = testFileSystemHelpers.flood(
-      localLogFile: localLogFileManager.localLogFile!)
-    localLogFileManager.localLogFile!.buffer = (bufferStr?.data(using: .utf8))!
-    localLogFileManager.localLogFile!.writeLogFileToDisk()
-
-    let expectation = XCTestExpectation(
-      description: "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer")
-    localLogFileManager.appWillResignActive {
-      expectation.fulfill()
-    }
-
-    wait(for: [expectation], timeout: 5.0)
-    XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
-    XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
+  
+  func testAppendImpairedMessagesWhenInitiallyEmpty() {
+    // should have a data object with the impaired messages
   }
-
-  func testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired() {
-    var config = self.config
-    // FLAKY: this will fail when devices and simulators ship with 10PB.
-    config.minFileSystemFreeSpace = SwiftLogFireCloudConfig.megabyte * 10_000_000_000
-
-    let fakeCloudLogFileManager = FakeCloudLogFileManager()
-    let localLogFileManager = SwiftLogManager(
-      label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
-    let logability = localLogFileManager.assessLocalLogability()
-
-    XCTAssert(logability == .impaired)
-  }
-
-  func testAssessLocalLogabilityWhenNoWritesAttemptedShouldBeNormal() {
-    guard let localLogFileManager = localLogFileManager else {
-      XCTFail()
-      return
-    }
-
-    let logability = localLogFileManager.assessLocalLogability()
-
-    XCTAssert(logability == .normal)
-  }
-
-  func testAssessLocalLogabilityWhenLastWriteIsAllCasesShouldReturnAllLogabilities() {
-    guard let localLogFileManager = localLogFileManager else {
-      XCTFail()
-      return
-    }
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
-    localLogFileManager.localLogFile!.lastFileWriteAttempt = Date()
-
-    localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -900, since: Date())
-    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(unFunctionalLogability == .unfunctional)
-
-    localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -300, since: Date())
-    let impairedLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(impairedLogability == .impaired)
-
-    localLogFileManager.localLogFile!.lastFileWrite = Date(timeInterval: -60, since: Date())
-    let normalLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(normalLogability == .normal)
-
-  }
-
-  func testAssessLocalLogabilityWhenSuccessiveFailuresAllCasesShouldReturnAllLogabilites() {
-    guard let localLogFileManager = localLogFileManager else {
-      XCTFail()
-      return
-    }
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config)
-    localLogFileManager.localLogFile!.lastFileWriteAttempt = Date()
-
-    localLogFileManager.localLogFile!.successiveWriteFailures = 12
-    let unFunctionalLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(unFunctionalLogability == .unfunctional)
-
-    localLogFileManager.localLogFile!.successiveWriteFailures = 4
-    let impairedLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(impairedLogability == .impaired)
-
-    localLogFileManager.localLogFile!.successiveWriteFailures = 2
-    let normalLogability = localLogFileManager.assessLocalLogability()
-    XCTAssert(normalLogability == .normal)
+  
+  func testAppendImpairedMessagesWhenNotEmpty() {
+    // should have a data object with previous and new impaired messages
   }
 
   static var allTests = [

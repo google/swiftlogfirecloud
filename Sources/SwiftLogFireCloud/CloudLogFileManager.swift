@@ -104,6 +104,15 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
   func writeLogFileToCloud(localLogFile: LocalLogFile) {
     cloudLogQueue.async {
       //TODO:  this probably should be rate limited since Firebase ratelimits
+      
+      if localLogFile.pendingWriteCount != 0 && localLogFile.pendingWriteWaitCount < 5 {
+        localLogFile.pendingWriteWaitCount += 1
+        self.cloudLogQueue.asyncAfter(deadline: .now() + 5.0) {
+          self.writeLogFileToCloud(localLogFile: localLogFile)
+        }
+      }
+      
+      localLogFile.close()
 
       let fileAttr = localLogFile.getLocalLogFileAttributes()
       guard let fileSize = fileAttr.fileSize, fileSize > 0 else {

@@ -13,9 +13,14 @@ internal class SwiftLogManager {
   private var cloudLogfileManager: CloudLogFileManagerProtocol
   private let label: String
 
+  internal var firstFileWrite: Date?
+  internal var lastFileWriteAttempt: Date?
+  internal var lastFileWrite: Date?
+  internal var successiveWriteFailures: Int = 0
+  
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
-      timeInterval: interval, target: self, selector: #selector(timedAttemptToWriteToDisk),
+      timeInterval: interval, target: self, selector: #selector(timedAttemptToWriteToCloud),
       userInfo: nil, repeats: true)
   }
 
@@ -54,15 +59,10 @@ internal class SwiftLogManager {
     }
   }
   @objc internal func appWillResignActive(_ completionForTesting: (() -> Void)? = nil) {
-    localLogQueue.async {  //TODO: make this a background task
-      self.localLogFile?.writeLogFileToDisk {
-        //TODO: write the file to the cloud on a background task upon local write completion
-        if let localLogFileToPush = self.localLogFile?.copy() as? LocalLogFile {
-          self.localLogFile = nil
-          localLogFileToPush.closeAndSycnhronize()
-          self.cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFileToPush)
-        }
-      }
+    localLogQueue.async {
+      //TODO: put this on a background task (ensuring priviledges exist for background processing)
+      self.queueLocalFileForCloud()
+      self.localLogFile = nil
       completionForTesting?()
     }
     self.writeTimer?.invalidate()
@@ -93,11 +93,11 @@ internal class SwiftLogManager {
       )
       .filter { $0.pathExtension == "log" }
       for file in files {
-        let logFileOnDisk = LocalLogFile(label: label, config: config)
+        let logFileOnDisk = LocalLogFile(label: label, config: config, queue: localLogQueue)
         logFileOnDisk.fileURL = file
         let attr = logFileOnDisk.getLocalLogFileAttributes()
         if let fileSize = attr.fileSize {
-          logFileOnDisk.bytesWritten = fileSize
+          logFileOnDisk.bytesWritten = Int(truncatingIfNeeded: fileSize)
         }
         logFileOnDisk.firstFileWrite = attr.creationDate
         localLogFilesOnDisk.append(logFileOnDisk)
@@ -122,21 +122,10 @@ internal class SwiftLogManager {
     }
   }
 
-  @objc private func timedAttemptToWriteToDisk() {
+  @objc private func timedAttemptToWriteToCloud() {
     localLogQueue.async {
-      guard let localLogFile = self.localLogFile else { return }
-      if localLogFile.isNowTheRightTimeToWriteLogToLocalFile(
-        logability: self.assessLocalLogability())
-      {
-        localLogFile.writeLogFileToDisk {
-          if let localLogFileToPush = localLogFile.copy() as? LocalLogFile {
-            self.localLogFile = nil
-            localLogFileToPush.closeAndSycnhronize()
-            self.cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFileToPush)
-          }
-        }
-      }
-      self.localLogFile = localLogFile.trimBufferIfNecessary()
+      self.queueLocalFileForCloud()
+      self.localLogFile = nil
     }
   }
 
@@ -149,13 +138,13 @@ internal class SwiftLogManager {
     guard isFileSystemFreeSpaceSufficient() else {
       return .impaired
     }
-    guard let lastWriteAttempt = localLogFile.lastFileWriteAttempt else {
+    guard let lastWriteAttempt = lastFileWriteAttempt else {
       // haven't even tried yet.
       return .normal
     }
 
     // if there is a successful write, check the duration between last attemp & last write,
-    if let lastWriteSuccess = localLogFile.lastFileWrite {
+    if let lastWriteSuccess = lastFileWrite {
       if abs(lastWriteSuccess.timeIntervalSince(lastWriteAttempt))
         > config.localFileBufferWriteInterval * 10
       {
@@ -170,10 +159,10 @@ internal class SwiftLogManager {
     }
     // if there has been no successful write, then determine viabiilty by how many retries since last success
     // since the lastWriteAttemp will be recent
-    if localLogFile.successiveWriteFailures > 10 {
+    if successiveWriteFailures > 100 {
       return .unfunctional
     }
-    if localLogFile.successiveWriteFailures > 3 {
+    if successiveWriteFailures > 12 {
       return .impaired
     }
     return .normal
@@ -199,32 +188,77 @@ internal class SwiftLogManager {
     }
     return true
   }
+  
+  internal func queueLocalFileForCloud() {
+    guard let localLogFile = self.localLogFile else { return }
+    cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFile)
+  }
+  
+  internal func retryWritingImpairedMessages() {
+    guard let messages = impairedMessages else { return }
+    
+    localLogFile?.writeMessage(messages) { result in
+      switch result {
+      case .success(_):
+        self.successiveWriteFailures = 0
+        self.impairedMessages = nil
+      case .failure(_):
+        self.successiveWriteFailures += 1
+      }
+    }
+  }
 
+  var impairedMessages: Data?
+  
+  internal func addMessageToImpaired(_ msg: Data) {
+    if impairedMessages == nil {
+      impairedMessages = Data()
+    }
+    impairedMessages?.append(msg)
+  }
+  
   func log(msg: String) {
     localLogQueue.async {
       guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
-      if self.localLogFile == nil {
-        self.localLogFile = LocalLogFile(label: self.label, config: self.config)
+      
+      if let localLogFile = self.localLogFile, self.cloudLogfileManager.isNowTheRightTimeToWriteToCloud(localLogFile) {
+        self.queueLocalFileForCloud()
+        self.localLogFile = nil
       }
-      self.localLogFile?.append(msgData)
+      
+      if self.localLogFile == nil {
+        self.localLogFile = LocalLogFile(label: self.label, config: self.config, queue: self.localLogQueue)
+      }
+      let logability = self.assessLocalLogability()
+      
+      self.lastFileWriteAttempt = Date()
 
-      if self.localLogFile?.isNowTheRightTimeToWriteLogToLocalFile(
-        logability: self.assessLocalLogability()) ?? false
-      {
+      guard let localLogFile = self.localLogFile else { return }
+      switch logability {
+      case .normal:
         // create directory in case something else removed it.
         self.createLocalLogDirectory()
-        self.localLogFile?.writeLogFileToDisk() {
-          guard let localLogFile = self.localLogFile else { return }
-          if self.cloudLogfileManager.isNowTheRightTimeToWriteToCloud(localLogFile) {
-            if let localFileToPush = localLogFile.copy() as? LocalLogFile {
-              self.localLogFile = nil
-              localFileToPush.closeAndSycnhronize()
-              self.cloudLogfileManager.writeLogFileToCloud(localLogFile: localFileToPush)
-            }
+        localLogFile.writeMessage(msgData) { result in
+          switch result {
+          case .failure(_) :
+            self.successiveWriteFailures += 1
+            self.addMessageToImpaired(msgData)
+          case .success(_):
+            break
           }
         }
-      } // pyramid of doom
-      self.localLogFile = self.localLogFile?.trimBufferIfNecessary()
+      case .impaired:
+        self.addMessageToImpaired(msgData)
+        if self.successiveWriteFailures % 30 == 0 {
+          self.retryWritingImpairedMessages()
+        }
+      case .unfunctional:
+        self.addMessageToImpaired(msgData)
+        if self.successiveWriteFailures % 300 == 0 {
+          self.retryWritingImpairedMessages()
+        }
+      }
+      self.localLogFile = self.localLogFile?.trimDiskImageIfNecessary()
     }
   }
 }

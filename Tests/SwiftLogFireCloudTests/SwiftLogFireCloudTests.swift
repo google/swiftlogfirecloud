@@ -4,7 +4,7 @@ import XCTest
 @testable import SwiftLogFireCloud
 
 var loggerIsBootstrapped = false
-var logger: Logger?
+
 
 final class SwiftLogFireCloudTests: XCTestCase {
 
@@ -15,15 +15,15 @@ final class SwiftLogFireCloudTests: XCTestCase {
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   let swiftLogFileCloudManager = SwiftLogFileCloudManager()
   var testFileSystemHelpers: TestFileSystemHelpers!
+  var logger: Logger!
 
   override func setUp() {
+    
     if !loggerIsBootstrapped {
       LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
       loggerIsBootstrapped = true
     }
-    if logger == nil {
-      logger = Logger(label: "testLogger")
-    }
+    logger = Logger(label: "testLogger")
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
   }
@@ -35,26 +35,28 @@ final class SwiftLogFireCloudTests: XCTestCase {
 
   func testForNoCrashOnFirstLog() {
     // if the logging system is bootstrapped correctly, this should silently just log
-    // otherwise it will crash, which is a test failuree
-    logger?.log(level: .info, "I want this logger to do something")
-  }
+    // otherwise it will crash, which is a test failure
+    let writeString = "I want this logger to do something"
 
-  func testForWriteOfLocalFile() {
-    testFileSystemHelpers.flood(logger: logger!)
-
-    // all log writes happen asynchronously in a fire and forget manner, so no
-    // means to ensure completion besides waiting
-    let expectation = XCTestExpectation(description: "oneLocalFileWrite")
+    logger.log(level: .info, "\(writeString)")
+    
+    let expectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
       expectation.fulfill()
     }
+    
     wait(for: [expectation], timeout: 3)
-    let resultingLogFileCount = testFileSystemHelpers.logFileDirectoryFileCount()
-    XCTAssertTrue(resultingLogFileCount == 1)
+    let directoryContents = testFileSystemHelpers.logFileDirectoryContents()
+    var readString = ""
+    if directoryContents.count >= 1 {
+      readString = testFileSystemHelpers.readDummyLogFile(url: directoryContents[0])!
+    }
+    XCTAssert(directoryContents.count == 1)
+    XCTAssert(readString.contains(writeString))
   }
 
   func testForMultipleLoggersNotCollidingOnDisk() {
-    testFileSystemHelpers.flood(logger: logger!)
+    testFileSystemHelpers.flood(logger: logger)
     let secondLogger = Logger(label: "testLogger2")
     //secondLogger.info("This is a testLogger2 message")
     testFileSystemHelpers.flood(logger: secondLogger)
@@ -72,6 +74,7 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
 
   static var allTests = [
-    ("testForNoCrashOnFirstLog", testForNoCrashOnFirstLog)
+    ("testForNoCrashOnFirstLog", testForNoCrashOnFirstLog),
+    ("testForMultipleLoggersNotCollidingOnDisk", testForMultipleLoggersNotCollidingOnDisk)
   ]
 }

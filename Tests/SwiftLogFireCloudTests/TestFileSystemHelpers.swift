@@ -14,10 +14,16 @@ class TestFileSystemHelpers {
   }
   internal func flood(localLogFile: LocalLogFile) -> String? {
     let sampleLogString = "This is a sample log string\n"
-    for _ in 0...20 {
-      localLogFile.append(sampleLogString.data(using: .utf8)!)
+    guard let sampleLogData = sampleLogString.data(using: .utf8) else {
+      XCTFail("Unable to flood log as conversion from string to data failed")
+      return nil
     }
-    return String(bytes: localLogFile.buffer, encoding: .utf8)
+    var logData = Data()
+    for _ in 0...20 {
+      localLogFile.writeMessage(sampleLogData)
+      logData.append(sampleLogData)
+    }
+    return String(bytes: logData, encoding: .utf8)
   }
 
   internal func flood(logger: Logger) {
@@ -69,9 +75,26 @@ class TestFileSystemHelpers {
       try data?.write(to: fileURL)
     } catch let error {
       print(error.localizedDescription)
-      XCTFail("Unable to write test file in testWriteLocalLogFile")
+      XCTFail("Unable to write test file in writeDummyLogFile")
     }
     return fileURL
+  }
+  
+  internal func readDummyLogFile(fileName: String) -> String? {
+    let fileURL = path.appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
+    
+     return readDummyLogFile(url: fileURL)
+  }
+  
+  internal func readDummyLogFile(url: URL) -> String? {
+    do {
+      let logString = try String(contentsOf: url)
+      return logString
+    } catch let error {
+      print(error.localizedDescription)
+      XCTFail("Unable to read from test file \(url.absoluteString) in readDummyLogFile")
+    }
+    return nil
   }
 
   internal func isLogFileDirectoryEmpty() -> Bool {
