@@ -21,6 +21,10 @@ public class SwiftLogFileCloudManager {
     return makeLogHandler
   }
   
+  public init() {
+    //apparently a public init is not synthesized even tho its a public class.
+  }
+  
   public func setLogToCloud(_ enabled: Bool) {
     SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud = enabled
   }
