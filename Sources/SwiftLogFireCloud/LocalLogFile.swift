@@ -10,7 +10,8 @@ enum LocalLogFileError : Error {
 /// Class object representing the logging buffer and metadata for writing the buffer to the device local disk.
 public class LocalLogFile {
   
-  private let queue: DispatchQueue
+  private let writeResponseQueue: DispatchQueue
+  private let writeWorkQueue: DispatchQueue = DispatchQueue(label: "com.google.firebase.swiftlogfirecloud.localfilewrite")
 
   public var fileURL: URL
   
@@ -30,8 +31,11 @@ public class LocalLogFile {
   }()
   lazy var dispatchIO: DispatchIO? = {
     guard let fileDescriptor = fileHandle?.fileDescriptor else { return nil }
-    return DispatchIO(type: .stream, fileDescriptor: fileDescriptor, queue: queue, cleanupHandler: { errorNo in
-      print("Error in creating DispatchIO: \(errorNo)")
+    return DispatchIO(type: .stream, fileDescriptor: fileDescriptor, queue: writeWorkQueue, cleanupHandler: { errorNo in
+      if errorNo != 0 {
+        // this should get reported as a write failure back to SwiftLogManager
+        print("Error in creating DispatchIO: \(errorNo)")
+      }
     })
   }()
 
@@ -50,7 +54,7 @@ public class LocalLogFile {
     self.config = config
     self.label = label
     self.bufferSizeToGiveUp = 4 * config.localFileSizeThresholdToPushToCloud
-    self.queue = queue
+    self.writeResponseQueue = queue
     self.fileURL = LocalLogFile.createLogFileURL(
       localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString, label: label)
   }
@@ -103,7 +107,7 @@ public class LocalLogFile {
   ///   - clientDeviceID: Client supplied unique identifer for the log
   ///   - label: the SwiiftLog label specified by the client
   /// - Returns: `URL` representation of the log file name.
-  internal static func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?, label: String) -> URL {
+  private static func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?, label: String) -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
 
     if localLogDirectoryName.count != 0 {
@@ -164,7 +168,7 @@ public class LocalLogFile {
       DispatchData(bytes: UnsafeRawBufferPointer(start: $0, count: msg.count))
     }
     pendingWriteCount += 1
-    dispatchIO?.write(offset: 0, data: dispatchData, queue: queue, ioHandler: {[weak self] done, dataRemaining, errorNo in
+    dispatchIO?.write(offset: 0, data: dispatchData, queue: writeResponseQueue, ioHandler: {[weak self] done, dataRemaining, errorNo in
       
       if done { // done can be true on failure with a nonzero errorNo, but while not successful, its not pending either.
         self?.pendingWriteCount -= 1

@@ -20,9 +20,9 @@ public class SwiftLogFileCloudManager {
     }
     return makeLogHandler
   }
-
-  public init() {
-
+  
+  public func setLogToCloud(_ enabled: Bool) {
+    SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud = enabled
   }
 }
 
@@ -36,7 +36,7 @@ internal enum Logability {
 public class SwiftLogFireCloud: LogHandler {
 
   private var label: String
-  private var config: SwiftLogFireCloudConfig
+  internal var config: SwiftLogFireCloudConfig
   private var localFileLogManager: SwiftLogManager
   private var logMessageDateFormatter = DateFormatter()
   private var logHandlerSerialQueue: DispatchQueue

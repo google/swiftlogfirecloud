@@ -5,8 +5,12 @@ import XCTest
 class LocalLogFileTests: XCTestCase {
 
   let config = SwiftLogFireCloudConfig(
-    logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
-    uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
+    logToCloud: false,
+    localFileSizeThresholdToPushToCloud: 100,
+    localFileBufferWriteInterval: 60,
+    uniqueID: "TestClientID",
+    minFileSystemFreeSpace: 20,
+    logDirectoryName: "TestLogs",
     cloudUploader: nil)
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   var testLogFile: LocalLogFile!
@@ -28,21 +32,13 @@ class LocalLogFileTests: XCTestCase {
   }
 
   func testInit() {
-    // sould set config, lablel, queue, fileURL should not be nil.
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(dummyLabel))
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(config.uniqueIDString!))
+    XCTAssertNil(testLogFile.firstFileWrite)
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(Bundle.main.bundleIdentifier!))
+    XCTAssert(testLogFile.fileURL.pathExtension == "log")
   }
   
-  func testCreateFileNameWithUniqueIDGivenAndLogLabel() {
-    // should create a unique containing unique bits
-  }
-  
-  func testCreateFileNameWithDeviceIDAndLogLabel() {
-    // should use the test device ID in the name.
-  }
-  
-  func testCreateFileURLWithLogDirectory() {
-    // should ensure the log directory name is in the path
-    // should ensure the extension is .log
-  }
   func testDeleteLocalLogFileWhenItExists() {
 
     let fileURL = testFileSystemHelpers.writeDummyLogFile(
@@ -58,7 +54,8 @@ class LocalLogFileTests: XCTestCase {
   }
   
   func testDeleteLocalLogFileWhenItDoesnExistShouldNoOp() {
-    
+    // not yet created, should not crash
+    testLogFile.delete()
   }
 
   func testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference() {
@@ -93,11 +90,9 @@ class LocalLogFileTests: XCTestCase {
   //  
   static var allTests = [
     ("testInit", testInit),
-    ("testCreateFileNameWithUniqueIDGivenAndLogLabel", testCreateFileNameWithUniqueIDGivenAndLogLabel),
-    ("testCreateFileNameWithDeviceIDAndLogLabel", testCreateFileNameWithDeviceIDAndLogLabel),
+
     ("testDeleteLocalLogFileWhenItExists", testDeleteLocalLogFileWhenItExists),
     ("testDeleteLocalLogFileWhenItDoesnExistShouldNoOp", testDeleteLocalLogFileWhenItDoesnExistShouldNoOp),
-    ("testCreateFileURLWithLogDirectory", testCreateFileURLWithLogDirectory),
     (
       "testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference",
       testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference

@@ -269,22 +269,6 @@ final class SwiftLogManagerTests: XCTestCase {
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
   }
-  
-  func testQueueLocalFileForCloudWritesLocalLogFiletoCloud() {
-    // should show the file as pushed in fake cloud manager
-  }
-  
-  func testRetryWritingImpairedMessagesActuallyWritesImpairedMessages() {
-    // should attempt a write, and if successful the file has data appended or thee writeFailureCount is incremented.
-  }
-  
-  func testAppendImpairedMessagesWhenInitiallyEmpty() {
-    // should have a data object with the impaired messages
-  }
-  
-  func testAppendImpairedMessagesWhenNotEmpty() {
-    // should have a data object with previous and new impaired messages
-  }
 
   static var allTests = [
     ("testCreateLocalLogDirectorySuccessful", testCreateLocalLogDirectorySuccessful),
