@@ -118,8 +118,12 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
       
       localLogFile.close()
       
+      // since the tests use the real file system, there is an apparently delay between writing
+      // to a file and when the file attributes are updated, resulting in this getting
+      // short circuited in testing as the fileSize is always zero. While I care about not uploading
+      // zero byte files in production, this check is not necessary for tests.
       let fileAttr = localLogFile.getLocalLogFileAttributes()
-      if let fileSize = fileAttr.fileSize, !self.isTesting && fileSize == 0  {
+      if let fileSize = fileAttr.fileSize, !self.config.isTesting && fileSize == 0  {
         localLogFile.delete()
         return
       }
@@ -143,7 +147,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
     if strandedFilesToPush?.count == 1 {
       DispatchQueue.main.async {
         self.strandedFileTimer = Timer.scheduledTimer(
-          timeInterval: 25, target: self, selector: #selector(self.processCloudPushQueue),
+          timeInterval: (!self.config.isTesting ? 25 : 1), target: self, selector: #selector(self.processCloudPushQueue),
           userInfo: nil, repeats: true)
       }
     }

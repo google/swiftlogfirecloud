@@ -43,7 +43,7 @@ internal class SwiftLogManager {
       name: UIApplication.willEnterForegroundNotification, object: nil)
 
     //wait 15s after startup, then attempt to push any files from previous runs up to cloud
-    DispatchQueue.main.asyncAfter(deadline: .now() + 15) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + (!config.isTesting ? 15 : 5)) {
       self.processStrandedFilesAtStartup()
     }
 

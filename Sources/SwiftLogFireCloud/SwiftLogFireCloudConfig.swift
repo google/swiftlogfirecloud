@@ -44,6 +44,7 @@ public struct SwiftLogFireCloudConfig {
   /// duplicate symbol issues for theclient app.
   weak var cloudUploader: CloudFileUploaderProtocol?
 
+  internal let isTesting: Bool
   public static let megabyte: Int = 1_048_576
 
   /// Create a new `SwiftLogFileCloudConfig`.
@@ -73,5 +74,6 @@ public struct SwiftLogFireCloudConfig {
     self.logToCloudOnSimulator = logToCloudOnSimulator
     self.uniqueIDString = uniqueID
     self.cloudUploader = cloudUploader
+    self.isTesting = ProcessInfo.processInfo.environment["isTesting"] == "true"
   }
 }
