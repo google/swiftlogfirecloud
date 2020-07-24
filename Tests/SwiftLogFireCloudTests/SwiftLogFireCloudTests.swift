@@ -20,23 +20,21 @@ var loggerIsBootstrapped = false
 final class SwiftLogFireCloudTests: XCTestCase {
 
   let fakeClientUploader = FakeClientCloudUploader()
-  var config = SwiftLogFireCloudConfig(
-    logToCloud: true,
-    localFileSizeThresholdToPushToCloud: 100,
-    logToCloudOnSimulator: true,
-    cloudUploader: nil)
+  var config: SwiftLogFireCloudConfig!
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   let swiftLogFileCloudManager = SwiftLogFileCloudManager()
   var testFileSystemHelpers: TestFileSystemHelpers!
-  var logger: Logger!
+  var handler: SwiftLogFireCloud!
+//  var logger: Logger!
 
   override func setUp() {
-    
-    config.cloudUploader = fakeClientUploader
-    if !loggerIsBootstrapped {
-      LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
-      loggerIsBootstrapped = true
-    }
+    config = SwiftLogFireCloudConfig(logToCloud: true,
+                                     localFileSizeThresholdToPushToCloud: 100,
+                                     logDirectoryName: UUID().uuidString,
+                                     logToCloudOnSimulator: true,
+                                     cloudUploader: fakeClientUploader)
+
+    handler = SwiftLogFireCloud(label: "TestSwiftLogFireCloud", config: config)
 
     swiftLogFileCloudManager.setLogToCloud(true)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
@@ -46,14 +44,18 @@ final class SwiftLogFireCloudTests: XCTestCase {
   override func tearDown() {
     testFileSystemHelpers.deleteAllLogFiles()
     testFileSystemHelpers.removeLogDirectory()
-    logger = nil
   }
+  
 
   func testForNoCrashOnFirstLogAndContentsContained() {
     // if the logging system is bootstrapped correctly, this should silently just log
     // otherwise it will crash, which is a test failure
+    if !loggerIsBootstrapped {
+      LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
+      loggerIsBootstrapped = true
+    }
     config.cloudUploader = nil
-    logger = Logger(label: "testLogger")
+    let logger = Logger(label: "testLogger")
     let writeString = "I want this logger to do something"
 
     logger.log(level: .info, "\(writeString)")
@@ -74,11 +76,11 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
   func testForNoLogWrittenWhenDisabled() {
-    logger = Logger(label: "testLogger")
-    swiftLogFileCloudManager.setLogToCloud(false)
+
+    handler.config.logToCloud = false
     let writeString = "I want this logger to do something"
 
-    logger.log(level: .info, "\(writeString)")
+    handler.log(level: .info, message: "\("\(writeString)")", metadata: nil)
 
     let expectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -91,11 +93,10 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
   func testForLoggingResumptionWhenReEnabled() {
-    logger = Logger(label: "testLogger")
-    swiftLogFileCloudManager.setLogToCloud(false)
+    handler.config.logToCloud = false
     let writeString = "I want this logger to do something"
 
-    logger.log(level: .info, "\(writeString)")
+    handler.log(level: .info, message: "\(writeString)", metadata: nil)
 
     let expectationWithLoggingOff = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -105,8 +106,8 @@ final class SwiftLogFireCloudTests: XCTestCase {
     wait(for: [expectationWithLoggingOff], timeout: 3)
     XCTAssert(testFileSystemHelpers.logFileDirectoryContents().count == 0)
 
-    swiftLogFileCloudManager.setLogToCloud(true)
-    logger.log(level: .info, "\(writeString)")
+    handler.config.logToCloud = true
+    handler.log(level: .info, message: "\(writeString)", metadata: nil)
 
     let expectationWithLoggingOn = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -125,10 +126,10 @@ final class SwiftLogFireCloudTests: XCTestCase {
 
   func testForMultipleLoggersNotCollidingOnDisk() {
     config.cloudUploader = nil
-    logger = Logger(label: "testLogger")
-    logger.info("This is a testLogger1 message")
-    let secondLogger = Logger(label: "testLogger2")
-    secondLogger.info("This is a testLogger2 message")
+    
+    handler.log(level: .info, message: "\("This is a testLogger1 message")", metadata: nil)
+    let secondHandler = SwiftLogFireCloud(label: "testLogger2", config: config)
+    secondHandler.log(level: .info, message: "\("This is a testLogger2 message")", metadata: nil)
 
     // all log writes happen asynchronously in a fire and forget manner, so no
     // means to ensure completion besides waiting
@@ -143,11 +144,10 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
   func testForCloudUploadAndFileDeleted() {
-    logger = Logger(label: "testLogger")
     let fakeClientUploader = config.cloudUploader as! FakeClientCloudUploader
     fakeClientUploader.mimicSuccessUpload = true
 
-    testFileSystemHelpers.flood(logger: logger)
+    testFileSystemHelpers.flood(handler: handler)
 
     let localWriteExpectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -155,7 +155,7 @@ final class SwiftLogFireCloudTests: XCTestCase {
     }
 
     wait(for: [localWriteExpectation], timeout: 3)
-    logger.info("I'm a message that should trigger the cloud upload")
+    handler.log(level: .info, message: "\("I'm a message that should trigger the cloud upload")", metadata: nil)
 
     let cloudWriteExpectation = XCTestExpectation(description: "Wait for Cloud write of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -171,9 +171,8 @@ final class SwiftLogFireCloudTests: XCTestCase {
     //DISABLED:  passes individually, but running with other tests they interfere with their longer
     // running tasks that pollute the file system that I have not abstracted.
     
-    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "EmptyLoggerStrandedFile1.log")
-    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "EmptyLoggerStrandedFile2.log")
-    logger = Logger(label: "EmptyLogger")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestSwiftLogFireCloudStrandedFile1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestSwiftLogFireCloudStrandedFile2.log")
     let fakeClientUploader = config.cloudUploader as! FakeClientCloudUploader
     fakeClientUploader.mimicSuccessUpload = true
 
@@ -200,11 +199,11 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
   func testForLoggerNotProcessingSecondLoggersFiles() {
-    logger = Logger(label: "testLogger")
-    let secondLogger = Logger(label: "testLogger2")
+
+    let secondHandler = SwiftLogFireCloud(label: "testLogger2", config: config)
     
-    logger.info("This is a testLogger1 message")
-    secondLogger.info("This is a testLogger2 message")
+    handler.log(level: .info, message: "\("This is a testLogger1 message")", metadata: nil)
+    secondHandler.log(level: .info, message: "\("This is a testLogger2 message")", metadata: nil)
     
     let expectation = XCTestExpectation(description: "Wait for stranded file processing to start & complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
@@ -221,6 +220,9 @@ final class SwiftLogFireCloudTests: XCTestCase {
     ("testForNoCrashOnFirstLogAndContentsContained", testForNoCrashOnFirstLogAndContentsContained),
     ("testForNoLogWrittenWhenDisabled", testForNoLogWrittenWhenDisabled),
     ("testForLoggingResumptionWhenReEnabled", testForLoggingResumptionWhenReEnabled),
-    ("testForMultipleLoggersNotCollidingOnDisk", testForMultipleLoggersNotCollidingOnDisk)
+    ("testForMultipleLoggersNotCollidingOnDisk", testForMultipleLoggersNotCollidingOnDisk),
+    ("testForCloudUploadAndFileDeleted", testForCloudUploadAndFileDeleted),
+    ("testForQueingOfStrandedFiles", testForQueingOfStrandedFiles),
+    ("testForLoggerNotProcessingSecondLoggersFiles", testForLoggerNotProcessingSecondLoggersFiles)
   ]
 }

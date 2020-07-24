@@ -12,6 +12,15 @@ class TestFileSystemHelpers {
     self.path = path
     self.config = config
   }
+  
+  internal func flood(handler: SwiftLogFireCloud) {
+    let sampleLogString = "This is a sample log string"
+    for _ in 0...3 {
+      handler.log(level: .info, message: "\(sampleLogString)", metadata: nil)
+    }
+    return
+  }
+  
   internal func flood(localLogFile: LocalLogFile) -> String? {
     let sampleLogString = "This is a sample log string\n"
     guard let sampleLogData = sampleLogString.data(using: .utf8) else {
@@ -24,14 +33,6 @@ class TestFileSystemHelpers {
       logData.append(sampleLogData)
     }
     return String(bytes: logData, encoding: .utf8)
-  }
-
-  internal func flood(logger: Logger) {
-    let sampleLogString = "This is a sample log string"
-    for _ in 0...3 {
-      logger.info("\(sampleLogString)")
-    }
-    return
   }
 
   internal func removeLogDirectory() {
