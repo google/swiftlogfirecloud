@@ -116,8 +116,8 @@ final class SwiftLogManagerTests: XCTestCase {
 
   func testRetrieveLocalLogFileListOnDiskWhenNotEmptyShouldFindFiles() {
 
-    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
-    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName2.log")
 
     let logFiles = localSwiftLogManager.retrieveLocalLogFileListOnDisk()
 
@@ -133,8 +133,18 @@ final class SwiftLogManagerTests: XCTestCase {
 
   func testProcessStrandedFilesAtStartupWhenNotLoggingToCloudShouldDeleteLocalFiles() {
 
-    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
-    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName2.log")
+    
+    let calendar = Calendar.current
+    let dateBeforeLaunch = calendar.date(byAdding: .second, value: -32, to:  Date())
+    
+    do {
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL1.path)
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL2.path)
+    } catch {
+      XCTFail()
+    }
 
     let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
 
@@ -155,8 +165,18 @@ final class SwiftLogManagerTests: XCTestCase {
     let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
-    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName1.log")
-    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "TestLogFileName2.log")
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "ManagerWritingTestLogFileName2.log")
+    
+    let calendar = Calendar.current
+    let dateBeforeLaunch = calendar.date(byAdding: .second, value: -32, to:  Date())
+    
+    do {
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL1.path)
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL2.path)
+    } catch {
+      XCTFail()
+    }
 
     let expectation = XCTestExpectation(description: "testProcessStrandedFilesAtStartup")
 

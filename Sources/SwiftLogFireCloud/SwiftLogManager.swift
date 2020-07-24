@@ -11,12 +11,13 @@ internal class SwiftLogManager {
     label: "com.google.firebase.swiftfirelogcloud-local", qos: .background)
   internal var writeTimer: Timer?
   private var cloudLogfileManager: CloudLogFileManagerProtocol
-  private let label: String
+  internal let label: String
 
   internal var firstFileWrite: Date?
   internal var lastFileWriteAttempt: Date?
   internal var lastFileWrite: Date?
   internal var successiveWriteFailures: Int = 0
+  private let strandedFilesDelay: TimeInterval
   
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
@@ -31,6 +32,7 @@ internal class SwiftLogManager {
     self.label = label
     self.config = config
     self.cloudLogfileManager = cloudLogfileManager
+    self.strandedFilesDelay = !config.isTesting ? 15 : 5
 
     writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
 
@@ -43,7 +45,7 @@ internal class SwiftLogManager {
       name: UIApplication.willEnterForegroundNotification, object: nil)
 
     //wait 15s after startup, then attempt to push any files from previous runs up to cloud
-    DispatchQueue.main.asyncAfter(deadline: .now() + (!config.isTesting ? 15 : 5)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + strandedFilesDelay) {
       self.processStrandedFilesAtStartup()
     }
 
@@ -111,12 +113,15 @@ internal class SwiftLogManager {
   @objc internal func processStrandedFilesAtStartup(_ completionForTesting: (() -> Void)? = nil) {
     localLogQueue.async {
       for localFoundFile in self.retrieveLocalLogFileListOnDisk()
-      where localFoundFile.fileURL != self.localLogFile?.fileURL {
-        if self.config.logToCloud {
-          self.cloudLogfileManager.addFileToCloudPushQueue(localLogFile: localFoundFile)
-        } else {
-          localFoundFile.delete()
-        }
+        where (localFoundFile.fileURL != self.localLogFile?.fileURL) {
+          let fileAge = abs(localFoundFile.firstFileWrite?.timeIntervalSinceNow ?? 0)
+          let containsLabel = localFoundFile.fileURL.absoluteString.contains(self.label)
+          if fileAge > self.strandedFilesDelay + 1.0 && containsLabel {
+            switch self.config.logToCloud {
+            case true: self.cloudLogfileManager.addFileToCloudPushQueue(localLogFile: localFoundFile)
+            case false: localFoundFile.delete()
+            }
+          }
       }
       completionForTesting?()
     }

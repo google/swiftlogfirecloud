@@ -168,22 +168,53 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
   func testForQueingOfStrandedFiles() {
-    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "StrandedFile1.log")
-    _ = testFileSystemHelpers.writeDummyLogFile(fileName: "StrandedFile2.log")
+    //DISABLED:  passes individually, but running with other tests they interfere with their longer
+    // running tasks that pollute the file system that I have not abstracted.
+    
+    let fileURL1 = testFileSystemHelpers.writeDummyLogFile(fileName: "EmptyLoggerStrandedFile1.log")
+    let fileURL2 = testFileSystemHelpers.writeDummyLogFile(fileName: "EmptyLoggerStrandedFile2.log")
     logger = Logger(label: "EmptyLogger")
     let fakeClientUploader = config.cloudUploader as! FakeClientCloudUploader
     fakeClientUploader.mimicSuccessUpload = true
 
+    let calendar = Calendar.current
+    let dateBeforeLaunch = calendar.date(byAdding: .second, value: -32, to:  Date())
+    
+    do {
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL1.path)
+      try FileManager.default.setAttributes([FileAttributeKey.creationDate:dateBeforeLaunch!], ofItemAtPath: fileURL2.path)
+    } catch {
+      XCTFail()
+    }
+    
     // the library delays for 5s then will look for log files in the directory, and attempt to upload them once per second
 
     let expectation = XCTestExpectation(description: "Wait for stranded file processing to start & complete")
-    DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
       expectation.fulfill()
     }
 
-    wait(for: [expectation], timeout: 15)
-    XCTAssert(testFileSystemHelpers.logFileDirectoryFileCount() == 0)
-
+    wait(for: [expectation], timeout: 9)
+    XCTAssert(fakeClientUploader.successUploadURLs.contains(fileURL1))
+    XCTAssert(fakeClientUploader.successUploadURLs.contains(fileURL2))
+  }
+  
+  func testForLoggerNotProcessingSecondLoggersFiles() {
+    logger = Logger(label: "testLogger")
+    let secondLogger = Logger(label: "testLogger2")
+    
+    logger.info("This is a testLogger1 message")
+    secondLogger.info("This is a testLogger2 message")
+    
+    let expectation = XCTestExpectation(description: "Wait for stranded file processing to start & complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 7)
+    print(testFileSystemHelpers.logFileDirectoryFileCount())
+    XCTAssert(testFileSystemHelpers.logFileDirectoryFileCount() == 2)
+    
   }
 
   static var allTests = [
