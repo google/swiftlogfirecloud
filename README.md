@@ -14,36 +14,36 @@ left to the reader
 1. Add and initialize Firebase in your project, if not already done.  See https://firebase.google.com/docs/ios/setup
 1. Create a object in your app that conforms to `CloudFileUploaderProtocol` and implements the
 `uploadFile` method as such:
-        ```code
-        final class SwiftLogFireCloudUploader : CloudFileUploaderProtocol {
+    ```
+    final class SwiftLogFireCloudUploader : CloudFileUploaderProtocol {
           
-          private let storage: Storage
+      private let storage: Storage
           
-          init(storage: Storage) {
-            self.storage = storage
-          }
+      init(storage: Storage) {
+        self.storage = storage
+      }
           
-          func uploadFile(_ cloudManager: CloudLogFileManagerClientProtocol, from localFile: LocalLogFile, to cloudPath: String) {
+      func uploadFile(_ cloudManager: CloudLogFileManagerClientProtocol, from localFile: LocalLogFile, to cloudPath: String) {
 
-            let storageReference = self.storage.reference()
-            let cloudReference = storageReference.child(cloudPath)
-            let uploadTask = cloudReference.putFile(from: localFile.fileURL, metadata: nil) { metadata, error in
-              if let error = error {
-                print(error.localizedDescription)
-                // Add the file to end of the queue upon error.  If its a rights error, it will rety ad infinitum
-                cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
-                
-                // handle the error
-              }
-            }
-            _ = uploadTask.observe(.success) { snapshot in
-              cloudManager.reportUploadStatus(.success(localFile))
-            }
-            _ = uploadTask.observe(.failure) { snapshot in
-              cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
-            }
+        let storageReference = self.storage.reference()
+        let cloudReference = storageReference.child(cloudPath)
+        let uploadTask = cloudReference.putFile(from: localFile.fileURL, metadata: nil) { metadata, error in
+          if let error = error {
+            print(error.localizedDescription)
+            // Add the file to end of the queue upon error.  If its a rights error, it will rety ad infinitum
+            cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
+            // handle the error
           }
         }
+        _ = uploadTask.observe(.success) { snapshot in
+          cloudManager.reportUploadStatus(.success(localFile))
+        }
+        _ = uploadTask.observe(.failure) { snapshot in
+          cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
+        }
+      }
+    }
+    ```
 1. In your `AppDelegate` add `import Logging` and `import SwiftLogFireCloud`
 1. In your `AppDelegate` method `didFinishLaunchingWithOptions` add the following :
         ```code
