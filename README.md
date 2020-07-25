@@ -44,7 +44,6 @@ left to the reader
             }
           }
         }
-        ```
 1. In your `AppDelegate` add `import Logging` and `import SwiftLogFireCloud`
 1. In your `AppDelegate` method `didFinishLaunchingWithOptions` add the following :
         ```code
@@ -64,11 +63,9 @@ left to the reader
 
         //Create a logger
         logger = Logger(label: "SwiftLogFireCloudExampleAppLogger")
-        ```
+
 1. And lastly, wherever in your code you want to log, add `import Logging` and log as such:
-      ```
-      logger?.info("I am a log message")
-      ```
+      ```logger?.info("I am a log message")
 
 ## A note about privacy
 
