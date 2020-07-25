@@ -14,7 +14,6 @@ left to the reader
 1. Add and initialize Firebase in your project, if not already done.  See https://firebase.google.com/docs/ios/setup
 1. Create a object in your app that conforms to `CloudFileUploaderProtocol` and implements the
 `uploadFile` method as such:
-    ```
     
           final class SwiftLogFireCloudUploader : CloudFileUploaderProtocol {
           
@@ -66,8 +65,7 @@ left to the reader
         logger = Logger(label: "SwiftLogFireCloudExampleAppLogger")
 
 1. And lastly, wherever in your code you want to log, add `import Logging` and log as such:
-    ```
-      logger?.info("I am a log message")
+`logger?.info("I am a log message")`
 
 ## A note about privacy
 
