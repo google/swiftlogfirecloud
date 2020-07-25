@@ -2,6 +2,7 @@
   import UIKit
 #endif
 
+/// Manager object that processes log messages and manages the writes to the local logfile and coordinationg of pushing files to the cloud.
 internal class SwiftLogManager {
 
   private var config: SwiftLogFireCloudConfig
@@ -18,13 +19,19 @@ internal class SwiftLogManager {
   internal var lastFileWrite: Date?
   internal var successiveWriteFailures: Int = 0
   private let strandedFilesDelay: TimeInterval
+  private var impairedMessages: Data?
   
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
       timeInterval: interval, target: self, selector: #selector(timedAttemptToWriteToCloud),
       userInfo: nil, repeats: true)
   }
-
+  
+  /// Creates a SwiftLogManager for the given logger.
+  /// - Parameters:
+  ///   - label: The label provided by the client app for the logger being managed by this object.
+  ///   - config: the `SwiftLogFireCloudConfig` sent by the client app on how the cloud logger should behave.
+  ///   - cloudLogfileManager: The object that is repsonsible for managing the coordination of pushing log files to the cloud.
   init(
     label: String, config: SwiftLogFireCloudConfig, cloudLogfileManager: CloudLogFileManagerProtocol
   ) {
@@ -69,7 +76,8 @@ internal class SwiftLogManager {
     }
     self.writeTimer?.invalidate()
   }
-
+  
+  /// Creates the local log file directory for the logger.  If the directory already exists, this is essentially an expensive no-op.
   internal func createLocalLogDirectory() {
     guard config.logDirectoryName.count > 0 else { return }
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -83,7 +91,9 @@ internal class SwiftLogManager {
       //TODO:  handle the case of directory creation not successful
     }
   }
-
+  
+  /// Queries the local file system for the list of files currently in the local log directory.
+  /// - Returns: Array of `LocalLogFile` objects representing the files on disk.
   internal func retrieveLocalLogFileListOnDisk() -> [LocalLogFile] {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
 
@@ -109,7 +119,11 @@ internal class SwiftLogManager {
     }
     return localLogFilesOnDisk
   }
-
+  
+  /// Looks for stranded files on disk from previous client app starts that can be uploaded.  Note it will only attempt to add
+  /// files that are not the current log file, not log files from other loggers and are at least older than the start of this instance of the app.
+  /// - Parameter completionForTesting: Completion used to report back completion of processing for testing only.  Otherwise its
+  ///   a fire and forget prcoess.
   @objc internal func processStrandedFilesAtStartup(_ completionForTesting: (() -> Void)? = nil) {
     localLogQueue.async {
       for localFoundFile in self.retrieveLocalLogFileListOnDisk()
@@ -133,7 +147,9 @@ internal class SwiftLogManager {
       self.localLogFile = nil
     }
   }
-
+  
+  /// Determines the logabilty of the logger, based on delta between write attemps, successful writes and successive write failures.
+  /// - Returns: `Logabilty` of the local file system, `.normal`` when operable and `.impaired` or `.unfunctional` when not.
   internal func assessLocalLogability() -> Logability {
     guard let localLogFile = localLogFile else { return .normal }
     guard let freeDiskBytes = freeDiskSize(), freeDiskBytes > Int64(localLogFile.count())
@@ -186,7 +202,9 @@ internal class SwiftLogManager {
       return nil
     }
   }
-
+  
+  /// Compares the physical local file system free disk size compared to the config set for minimum file space required to log.
+  /// - Returns: boolean which is true if the local file system is of sufficient size and free space.
   internal func isFileSystemFreeSpaceSufficient() -> Bool {
     guard let freeDiskSpace = freeDiskSize(), freeDiskSpace > config.minFileSystemFreeSpace else {
       return false
@@ -194,11 +212,13 @@ internal class SwiftLogManager {
     return true
   }
   
+  /// Adds the current file for processing to the cloud.
   internal func queueLocalFileForCloud() {
     guard let localLogFile = self.localLogFile else { return }
     cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFile)
   }
   
+  /// Attemps to retry writing previously failed log messages to the local file system.
   internal func retryWritingImpairedMessages() {
     guard let messages = impairedMessages else { return }
     
@@ -212,9 +232,9 @@ internal class SwiftLogManager {
       }
     }
   }
-
-  var impairedMessages: Data?
   
+  /// Adds a log message to the list of messages logged but not successfully written to the log file.
+  /// - Parameter msg: message to be logged.
   internal func addMessageToImpaired(_ msg: Data) {
     if impairedMessages == nil {
       impairedMessages = Data()
@@ -222,7 +242,9 @@ internal class SwiftLogManager {
     impairedMessages?.append(msg)
   }
   
-  func log(msg: String) {
+  /// Logs the message from the handler.
+  /// - Parameter msg: message to be logged.
+  internal func log(msg: String) {
     localLogQueue.async {
       guard let msgData = "\(msg)\n".data(using: .utf8) else { return }
       

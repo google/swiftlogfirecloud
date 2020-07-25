@@ -5,13 +5,13 @@ import Logging
 public class SwiftLogFileCloudManager {
 
   /// Description LogHandler factory method type.
-  public typealias LogHandlerFactory = (String) -> LogHandler
-  public static var swiftLogFireCloud: SwiftLogFireCloud?
+  internal typealias LogHandlerFactory = (String) -> LogHandler
+  internal static var swiftLogFireCloud: SwiftLogFireCloud?
 
   /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
   /// - Parameter config: SwiftLogFireCloudConfig object for configuring the logger.
   /// - Returns: returns a function that makes a LogHandler.
-  public func makeLogHandlerFactory(config: SwiftLogFireCloudConfig) -> LogHandlerFactory {
+  internal func makeLogHandlerFactory(config: SwiftLogFireCloudConfig) -> LogHandlerFactory {
     func makeLogHandler(label: String) -> LogHandler {
       SwiftLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
       // SwiftLogFireCloud can't return nil
@@ -25,11 +25,14 @@ public class SwiftLogFileCloudManager {
     //apparently a public init is not synthesized even tho its a public class.
   }
   
+  /// Allows client apps to control when to log to cloud programatically after the logger is created (to turn it off, for example)
+  /// - Parameter enabled: boolean when true turns cloud logging on, when false turns it off.
   public func setLogToCloud(_ enabled: Bool) {
     SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud = enabled
   }
 }
 
+/// Enum for the status of logability, used by both local file logging and cloud logging capability.
 internal enum Logability {
   case normal
   case impaired
@@ -37,7 +40,7 @@ internal enum Logability {
 }
 
 /// SwiftLog handler coordinating the management of the local and cloud logs.
-public class SwiftLogFireCloud: LogHandler {
+internal class SwiftLogFireCloud: LogHandler {
 
   private var label: String
   internal var config: SwiftLogFireCloudConfig
@@ -45,8 +48,14 @@ public class SwiftLogFireCloud: LogHandler {
   private var logMessageDateFormatter = DateFormatter()
   private var logHandlerSerialQueue: DispatchQueue
   private var cloudLogFileManager: CloudLogFileManagerProtocol
-
-  init(
+  
+  /// LogHandler created by the `SwiftLogFireCloudManager` factory method for every logger requested by the client app
+  /// This should only be called by the
+  /// - Parameters:
+  ///   - label: client supplied string describing the logger.  Should be unique but not enforced
+  ///   - config: `SwiftLogFireCouldConfig` object supplied by client app.
+  ///   - cloudLogfileManager: object that is used to manage the uploading of files to the cloud through the client provided uploader.
+  internal init(
     label: String, config: SwiftLogFireCloudConfig,
     cloudLogfileManager: CloudLogFileManagerProtocol? = nil
   ) {
@@ -81,8 +90,16 @@ public class SwiftLogFireCloud: LogHandler {
       return (info.kp_proc.p_flag & P_TRACED) != 0
     }()
   #endif
-
-  public func log(
+  
+  /// LogHandler method that takes the clients call to the Logger interface and performs the logging to file & cloud.
+  /// - Parameters:
+  ///   - level: the log level set by the user, as defined in the SwiftLog interface.
+  ///   - message: the message to be logged.
+  ///   - metadata: the metadata to also be logged, as set by the client app.
+  ///   - file: filename from where the client app requested a message to be logged.
+  ///   - function: method from where the client app requested a message to be logged.
+  ///   - line: file line number where the client app requested a message to be logged.
+  internal func log(
     level: Logger.Level,
     message: Logger.Message,
     metadata: Logger.Metadata?,
@@ -126,9 +143,11 @@ public class SwiftLogFireCloud: LogHandler {
       metadata[key] = newValue
     }
   }
-
+  
+  /// Metadata dictionary to be written with log
   public var metadata: Logger.Metadata = .init()
-
+  
+  /// Default log level for the logger
   public var logLevel: Logger.Level = .info
 
 }

@@ -12,13 +12,12 @@ public class LocalLogFile {
   
   private let writeResponseQueue: DispatchQueue
   private let writeWorkQueue: DispatchQueue = DispatchQueue(label: "com.google.firebase.swiftlogfirecloud.localfilewrite")
-
+  
+  /// The URL of the file on the local file system.
   public var fileURL: URL
   
   internal var bytesWritten: Int = 0
-  
   internal var firstFileWrite: Date?
-  
   internal var pendingWriteCount = 0
   internal var pendingWriteWaitCount = 0
 
@@ -26,10 +25,10 @@ public class LocalLogFile {
   /// If the log file buffer grows beyond this size, the log file is abandoned.
   private let bufferSizeToGiveUp: Int
   private let label: String
-  lazy var fileHandle: FileHandle? = {
+  private lazy var fileHandle: FileHandle? = {
     try? FileHandle(forWritingTo: fileURL)
   }()
-  lazy var dispatchIO: DispatchIO? = {
+  private lazy var dispatchIO: DispatchIO? = {
     guard let fileDescriptor = fileHandle?.fileDescriptor else { return nil }
     return DispatchIO(type: .stream, fileDescriptor: fileDescriptor, queue: writeWorkQueue, cleanupHandler: { errorNo in
       if errorNo != 0 {
@@ -45,11 +44,18 @@ public class LocalLogFile {
     dateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss.SSSZ'"
     return dateFormatter
   }()
-
+  
+  /// Method to retreive the (meta) size of the file.
+  /// - Returns: The number of bytes successfully written to disk.
   internal func count() -> Int {
     return Int(truncatingIfNeeded: bytesWritten)
   }
   
+  /// Creates a new local log file meta computes the physical file's filename.
+  /// - Parameters:
+  ///   - label: The label used for the logger creating the log file
+  ///   - config: The loggers `SwiftLogFilreCloudConfig` object, for which the local log file uses the log directory and other aspects.
+  ///   - queue: The dispatch queue used for writing to the local disk.
   init(label: String, config: SwiftLogFireCloudConfig, queue: DispatchQueue) {
     self.config = config
     self.label = label
@@ -118,7 +124,7 @@ public class LocalLogFile {
     }
   }
 
-  /// Deletes the local file from the filesystem.
+  /// Deletes the local file from the filesystem, if it can.  Deleting failures are ignored as subsquent runs will recroup and discard the file.
   public func delete() {
     // Close the DispatchIO if it hasn't been closed?
     do {
@@ -185,6 +191,7 @@ public class LocalLogFile {
     })
   }
   
+  /// Closeds the log file on disk for writing, usually in preparation for writing to the cloud.
   internal func close() {
     dispatchIO?.close()
   }

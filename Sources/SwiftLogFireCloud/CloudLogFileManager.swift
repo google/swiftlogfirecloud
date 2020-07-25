@@ -77,8 +77,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
     return cloudFilePath
   }
 
-  /// Determines if the buffer is bigger than the size to push buffer to the cloud.
-  /// - Returns: true if the buffer is larger than the `config.localFileSizeThresholdToPushToCloud`.
+  /// Determines if the buffer is bigger than the size to push buffer to the cloud and that the logability supports writing or retrying to write.
+  /// - Returns: true if the buffer is larger than the `config.localFileSizeThresholdToPushToCloud` and logability supports a write.
   internal func isNowTheRightTimeToWriteToCloud(_ localLogFile: LocalLogFile) -> Bool {
     #if targetEnvironment(simulator)
       if !config.logToCloudOnSimulator { return false }
@@ -104,8 +104,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
     }
   }
 
-  /// Pushes a  local log file to the cloud configured by the client app.
-  /// - Parameter localLogFile: Reference to LocalLogFile reference with meta data about the local file on disk.
+  /// Pushes a  local log file to the `CloudLogFileManagerClientProtocol` object provided by the client app which manages Firebase Storage object
+  /// - Parameter localLogFile: Reference to LocalLogFile with meta data about the local file on disk.
   internal func writeLogFileToCloud(localLogFile: LocalLogFile) {
     cloudLogQueue.async {
       //TODO:  this probably should be rate limited since Firebase ratelimits
@@ -182,7 +182,9 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
       }
     }
   }
-
+  
+  /// Method that the client object conforming to `CloudLogFileManagerClientProtocol` calls back to report the status of the upload request.
+  /// - Parameter result: `Result` type containing the log file uploaded or the error encountered, with the log file.
   public func reportUploadStatus(_ result: Result<LocalLogFile, CloudUploadError>) {
     switch result {
     case .success(let logFile):
@@ -198,7 +200,9 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
       
     }
   }
-
+  
+  /// Determines the logability of cloud uploading based on gaps between write attemps and successes, and successive write failures
+  /// - Returns: The cloud logability, either `.normal`, `.impaired` for a few recent failures or `.unfunctional` for no recent successful uploads.
   internal func assessLogability() -> Logability {
     // testing for duration between attempt/success and failures may be redundant
     if let lastWriteSuccess = lastWriteSuccess,
@@ -226,5 +230,4 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
     }
     return .normal
   }
-
 }
