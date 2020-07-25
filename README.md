@@ -32,7 +32,7 @@ left to the reader
                   print(error.localizedDescription)
                   // Add the file to end of the queue upon error.  If its a rights error, it will rety ad infinitum
                   cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
-                  // handle the error, not this is method not called on the main thread...
+                  // handle the error, note this is method not called on the main thread...
                 }
               }
               _ = uploadTask.observe(.success) { snapshot in
@@ -66,6 +66,8 @@ left to the reader
 
 1. And lastly, wherever in your code you want to log, add `import Logging` and log as such:
 `logger?.info("I am a log message")`
+
+The sample project SwiftLogFireCloudExampleApp in the depot demonstrates a working client app logging using SwiftLog.
 
 ## A note about privacy
 
