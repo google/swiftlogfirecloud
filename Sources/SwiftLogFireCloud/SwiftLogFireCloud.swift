@@ -5,13 +5,13 @@ import Logging
 public class SwiftLogFileCloudManager {
 
   /// Description LogHandler factory method type.
-  internal typealias LogHandlerFactory = (String) -> LogHandler
+  public typealias LogHandlerFactory = (String) -> LogHandler
   internal static var swiftLogFireCloud: SwiftLogFireCloud?
 
   /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
   /// - Parameter config: SwiftLogFireCloudConfig object for configuring the logger.
   /// - Returns: returns a function that makes a LogHandler.
-  internal func makeLogHandlerFactory(config: SwiftLogFireCloudConfig) -> LogHandlerFactory {
+  public func makeLogHandlerFactory(config: SwiftLogFireCloudConfig) -> LogHandlerFactory {
     func makeLogHandler(label: String) -> LogHandler {
       SwiftLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
       // SwiftLogFireCloud can't return nil
