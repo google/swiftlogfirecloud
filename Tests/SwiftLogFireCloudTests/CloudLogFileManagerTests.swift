@@ -6,86 +6,258 @@
 //
 
 import XCTest
+@testable import SwiftLogFireCloud
 
 class CloudLogFileManagerTests: XCTestCase {
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
+  var config: SwiftLogFireCloudConfig!
+  var cloudManager: CloudLogFileManager!
+  var fakeClientCloudUploader: FakeClientCloudUploader!
+  var localLogFile: LocalLogFile!
+  
+  override func setUpWithError() throws {
+    fakeClientCloudUploader = FakeClientCloudUploader()
+    config = SwiftLogFireCloudConfig(logToCloud: false,
+                                         localFileSizeThresholdToPushToCloud: 100,
+                                         localFileBufferWriteInterval: 60,
+                                         uniqueID: "SwiftLogFireCloud",
+                                         minFileSystemFreeSpace: 20,
+                                         logDirectoryName: "TestLogs",
+                                         logToCloudOnSimulator: true,
+                                         cloudUploader: fakeClientCloudUploader)
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-  
-  func testInit() {
-    // should set label, config.
+    cloudManager = CloudLogFileManager(label: "SwiftLogFireCloud", config: config)
+    localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                config: config,
+                                queue: DispatchQueue(label: "TestQueue"))
+  }
+
+  override func tearDownWithError() throws {
+    cloudManager = nil
   }
   
-  func testCreateCloudFilePathWithDate() {
-    // should ensure bundle, date, deviceID etc are in the path.
+  func testRightTimetoWriteToCloudWhenLogabilityNormalAndEnoughBytesWritten() {
+    cloudManager.lastWriteSuccess = Date(timeIntervalSinceNow: -30)
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssert(result)
   }
   
-  func testRightTimetoWriteToCloudWhenLogabilityNormal() {
-    // should return true for normal conditions.
-  }
-  
-  func testRightTimeToWriteTOCloudWhenLogabilityImpairedAndWithinRetryInterval() {
-    // should return false
+  func testRightTimetoWriteToCloudWhenLogabilityNormalAndNotEnoughBytesWritten() {
+    cloudManager.lastWriteSuccess = Date(timeIntervalSinceNow: -30)
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud - 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssertFalse(result)
   }
   
   func testRightTimeToWriteTOCloudWhenLogabilityImpairedAndOutsideRetryInterval() {
-    // should return true
+    cloudManager.lastWriteSuccess = Date()
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -190)
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssert(result)
   }
   
-  func testRightTimeToWriteTOCloudWhenLogabilityUnfunctionalAndWithinRetryInterval() {
-    // should return false
+  func testRightTimeToWriteTOCloudWhenLogabilityImpairedAndInsideRetryInterval() {
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -10)
+    cloudManager.successiveFails = 5
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssertFalse(result)
+  }
+  
+  func testRightTimeToWriteTOCloudWhenLogabilityUnfunctionalAndInsideRetryInterval() {
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -500)
+    cloudManager.successiveFails = 12
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssertFalse(result)
   }
   
   func testRightTimeToWriteTOCloudWhenLogabilityUnfunctionalAndOutsideRetryInterval() {
-    // should return true
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -700)
+    cloudManager.successiveFails = 12
+    let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
+                                   config: config,
+                                   queue: DispatchQueue(label: "TestQueue"))
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
+    XCTAssert(result)
   }
   
   func testWriteLogFileTCloudWithNoPendingWrites() {
-    // should call the uploader delegate
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    localLogFile.pendingWriteCount = 0
+    cloudManager.writeLogFileToCloud(localLogFile: localLogFile)
+    
+    let expectation = XCTestExpectation(description: "Wait for async upload")
+    
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 3.0)
+    
+    XCTAssert(fakeClientCloudUploader.successUploadURLs.contains(localLogFile.fileURL))
   }
   
   func testWriteLogFileToCloudWithResolvedPendingWrites() {
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    localLogFile.pendingWriteCount = 10
+    localLogFile.pendingWriteWaitCount = 0
+    cloudManager.writeLogFileToCloud(localLogFile: localLogFile)
+    localLogFile.pendingWriteCount = 0
+    
+    let expectation = XCTestExpectation(description: "Wait for async upload")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 4.0)
+    
+    XCTAssert(fakeClientCloudUploader.successUploadURLs.contains(localLogFile.fileURL))
     
   }
   
   func testWriteLogFileToCloudAfterPendingWritesTimeout() {
+    localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
+    localLogFile.pendingWriteCount = 10
+    localLogFile.pendingWriteWaitCount = 0
+    cloudManager.writeLogFileToCloud(localLogFile: localLogFile)
     
-  }
-  
-  func testWriteLogFileToCloudIsIgnoredWithSizeZeroAndDeletedLocally() {
+    let expectation = XCTestExpectation(description: "Wait for async upload")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 7.0)
+    
+    XCTAssert(fakeClientCloudUploader.successUploadURLs.isEmpty)
     
   }
 
   func testAddingFirstFileToCloudPushQueue() {
-    // should have length of 1
+    
+    cloudManager.addFileToCloudPushQueue(localLogFile: localLogFile)
+    
+    let expectation = XCTestExpectation(description: "Wait for async timer start")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 0.5)
+    
+    XCTAssert(cloudManager.strandedFilesToPush?.count == 1)
+    XCTAssert(cloudManager.strandedFileTimer!.isValid)
   }
   
   func testAddingAdditionalFilesToCloudPushQueue() {
     
+    cloudManager.addFileToCloudPushQueue(localLogFile: localLogFile)
+    cloudManager.addFileToCloudPushQueue(localLogFile: localLogFile)
+    
+    let expectation = XCTestExpectation(description: "Wait for async timer start")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 0.5)
+    
+    XCTAssert(cloudManager.strandedFilesToPush?.count == 2)
+    XCTAssert(cloudManager.strandedFileTimer!.isValid)
   }
   
   func testReportUploadStatusOnSuccess() {
+    
+    XCTAssertNil(cloudManager.lastWriteSuccess)
+    cloudManager.reportUploadStatus(.success(localLogFile))
+    
+    let expectation = XCTestExpectation(description: "Wait for async timer start")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 0.5)
+    
+    XCTAssertNotNil(cloudManager.lastWriteSuccess)
+    XCTAssert(cloudManager.successiveFails == 0)
     
   }
   
   func testReportUploadStatusOnFailure() {
     
-  }
-  
-  func testClodLogabilityWhenNormal() {
+    let previousSuccessiveFails = cloudManager.successiveFails
+    cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localLogFile)))
+    
+    let expectation = XCTestExpectation(description: "Wait for async timer start")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 0.5)
+    
+    let strandedURLs = cloudManager.strandedFilesToPush!.map { $0.fileURL }
+    XCTAssert(strandedURLs.contains(localLogFile.fileURL))
+    XCTAssert(cloudManager.successiveFails == previousSuccessiveFails + 1)
     
   }
   
-  func testCloudLogabilityWhenImpaired() {
-    
+  func testCloudLogabilityWhenNormalAndNoWritesAttempted() {
+    cloudManager.successiveFails = 1
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .normal)
   }
   
-  func testCloudLogabilityWhenUnfunctional() {
-    
+  func testCloudLogabilityWhenNormalAndWritesAttempted() {
+    cloudManager.lastWriteSuccess = Date(timeIntervalSinceNow: -30)
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .normal)
+  }
+  
+  func testCloudLogabilityWhenImpairedFromFailedWrite() {
+    cloudManager.successiveFails = 5
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .impaired)
+  }
+  
+  func testCloudLogabilityWhenImpairedFromDelaysBetweenAttemptAndSucces() {
+    cloudManager.lastWriteSuccess = Date()
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -190)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .impaired)
+  }
+  
+  func testCloudLogabilityWhenUnfunctionalFromDelayBetweenAttempAndSuccess() {
+    cloudManager.lastWriteSuccess = Date()
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -900)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .unfunctional)
+  }
+  
+  func testCloudLogabilityWhenUnfunctionalFromFailedWrites() {
+    cloudManager.successiveFails = 12
+    cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
+    let logability = cloudManager.assessLogability()
+    XCTAssert(logability == .unfunctional)
   }
 }

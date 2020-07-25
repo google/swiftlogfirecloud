@@ -8,17 +8,18 @@
 /// the file is not deleted and pushed to a processing queue to be pushed at a later time.
 class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClientProtocol {
 
-  private var logability: Logability = .normal
-  private var lastWriteAttempt: Date?
-  private var lastWriteSuccess: Date?
-  private var successiveFails: Int = 0
-  private var strandedFilesToPush: [LocalLogFile]?
-  private var strandedFileTimer: Timer?
+  internal var logability: Logability = .normal
+  internal var lastWriteAttempt: Date?
+  internal var lastWriteSuccess: Date?
+  internal var successiveFails: Int = 0
+  internal var strandedFilesToPush: [LocalLogFile]?
+  internal var strandedFileTimer: Timer?
   private var cloudDirectoryNameDateFormatter: DateFormatter
   private var cloudFileNameDateFormatter: DateFormatter
   private let config: SwiftLogFireCloudConfig
   private let label: String
-  private let isTesting: Bool
+  private let pendingWriteRetryDelay: Double
+  private let pendingWriteMaxRetries: Int
 
   private let cloudLogQueue = DispatchQueue(
     label: "com.google.firebase.swiftfirelogcloud-cloud", qos: .background)
@@ -35,7 +36,8 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
     cloudFileNameDateFormatter.timeZone = TimeZone.current
     cloudFileNameDateFormatter.dateFormat = "yyyy-MM-dd'T'HH-mm-ss.SSSZ'"
     
-    isTesting = ProcessInfo.processInfo.environment["isTesting"] == "true"
+    pendingWriteRetryDelay = !config.isTesting ? 5.0 : 1.0
+    pendingWriteMaxRetries = !config.isTesting ? 10 : 2
   }
 
   private func createCloundFilePathAndName(date: Date?) -> String {
@@ -111,10 +113,16 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
         localLogFile.delete()
         return
       }
-      if localLogFile.pendingWriteCount != 0 && localLogFile.pendingWriteWaitCount < 5 {
-        localLogFile.pendingWriteWaitCount += 1
-        self.cloudLogQueue.asyncAfter(deadline: .now() + 5.0) {
-          self.writeLogFileToCloud(localLogFile: localLogFile)
+      if localLogFile.pendingWriteCount != 0 {
+        // switch here for a little less pyramid of doom
+        switch localLogFile.pendingWriteWaitCount < self.pendingWriteMaxRetries {
+        case true:
+          localLogFile.pendingWriteWaitCount += 1
+          self.cloudLogQueue.asyncAfter(deadline: .now() + self.pendingWriteRetryDelay) {
+            self.writeLogFileToCloud(localLogFile: localLogFile)
+          }
+        case false:
+          localLogFile.delete()
         }
         return
       }
@@ -192,6 +200,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
   }
 
   internal func assessLogability() -> Logability {
+    // testing for duration between attempt/success and failures may be redundant
     if let lastWriteSuccess = lastWriteSuccess,
       let lastWriteAttempt = lastWriteAttempt
     {
