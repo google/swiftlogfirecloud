@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>32751952976-167jnsr9s5qnlsp8ett72lkj0e25ug4j.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.32751952976-167jnsr9s5qnlsp8ett72lkj0e25ug4j</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAoNdRBCsQm73-hOD3zPUm1UsPkKBaNno8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>32751952976</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.leisurehoundsports.SwiftLogFireCloudExampleApp</string>
+	<key>PROJECT_ID</key>
+	<string>swiftlogfirecloudsampleaapp</string>
+	<key>STORAGE_BUCKET</key>
+	<string>swiftlogfirecloudsampleaapp.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:32751952976:ios:5399d3bcabf3394ca05d55</string>
+	<key>DATABASE_URL</key>
+	<string>https://swiftlogfirecloudsampleaapp.firebaseio.com</string>
+</dict>
+</plist>

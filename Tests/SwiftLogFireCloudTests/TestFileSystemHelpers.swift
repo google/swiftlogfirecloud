@@ -1,9 +1,18 @@
-//
-//  TestFileSystemHelpers.swift
-//  SwiftLogFireCloudTests
-//
-//  Created by Timothy Wise on 7/5/20.
-//
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 import Logging
 import XCTest
@@ -13,26 +22,33 @@ import XCTest
 class TestFileSystemHelpers {
 
   let path: URL
-  let config: SwiftLogFileCloudConfig
+  let config: SwiftLogFireCloudConfig
 
-  init(path: URL, config: SwiftLogFileCloudConfig) {
+  init(path: URL, config: SwiftLogFireCloudConfig) {
     self.path = path
     self.config = config
   }
-  internal func flood(localLogFile: LocalLogFile) -> String? {
-    let sampleLogString = "This is a sample log string\n"
-    for _ in 0...20 {
-      localLogFile.append(sampleLogString.data(using: .utf8)!)
-    }
-    return String(bytes: localLogFile.buffer, encoding: .utf8)
-  }
-
-  internal func flood(logger: Logger) {
+  
+  internal func flood(handler: SwiftLogFireCloud) {
     let sampleLogString = "This is a sample log string"
     for _ in 0...3 {
-      logger.info("\(sampleLogString)")
+      handler.log(level: .info, message: "\(sampleLogString)", metadata: nil)
     }
     return
+  }
+  
+  internal func flood(localLogFile: LocalLogFile) -> String? {
+    let sampleLogString = "This is a sample log string\n"
+    guard let sampleLogData = sampleLogString.data(using: .utf8) else {
+      XCTFail("Unable to flood log as conversion from string to data failed")
+      return nil
+    }
+    var logData = Data()
+    for _ in 0...20 {
+      localLogFile.writeMessage(sampleLogData)
+      logData.append(sampleLogData)
+    }
+    return String(bytes: logData, encoding: .utf8)
   }
 
   internal func removeLogDirectory() {
@@ -76,9 +92,26 @@ class TestFileSystemHelpers {
       try data?.write(to: fileURL)
     } catch let error {
       print(error.localizedDescription)
-      XCTFail("Unable to write test file in testWriteLocalLogFile")
+      XCTFail("Unable to write test file in writeDummyLogFile")
     }
     return fileURL
+  }
+  
+  internal func readDummyLogFile(fileName: String) -> String? {
+    let fileURL = path.appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
+    
+     return readDummyLogFile(url: fileURL)
+  }
+  
+  internal func readDummyLogFile(url: URL) -> String? {
+    do {
+      let logString = try String(contentsOf: url)
+      return logString
+    } catch let error {
+      print(error.localizedDescription)
+      XCTFail("Unable to read from test file \(url.absoluteString) in readDummyLogFile")
+    }
+    return nil
   }
 
   internal func isLogFileDirectoryEmpty() -> Bool {

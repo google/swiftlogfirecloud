@@ -1,9 +1,18 @@
-//
-//  LocalLogFileTests.swift
-//  SwiftLogFireCloudTests
-//
-//  Created by Timothy Wise on 7/4/20.
-//
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 import XCTest
 
@@ -11,16 +20,23 @@ import XCTest
 
 class LocalLogFileTests: XCTestCase {
 
-  let config = SwiftLogFileCloudConfig(
-    logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
-    uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs")
+  let config = SwiftLogFireCloudConfig(
+    logToCloud: false,
+    localFileSizeThresholdToPushToCloud: 100,
+    localFileBufferWriteInterval: 60,
+    uniqueID: "TestClientID",
+    minFileSystemFreeSpace: 20,
+    logDirectoryName: "TestLogs",
+    cloudUploader: nil)
   let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
   var testLogFile: LocalLogFile!
   var testFileSystemHelpers: TestFileSystemHelpers!
   let dummyLabel = "LocalLogFileDirectWriting"
+  let localLogFileTestsQueue = DispatchQueue(label: "com.google.firebase.swiftlogfirecloud.locallogfiletests")
 
   override func setUpWithError() throws {
-    testLogFile = LocalLogFile(label: dummyLabel, config: config)
+    
+    testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue)
     testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
     testFileSystemHelpers.createLocalLogDirectory()
 
@@ -31,7 +47,15 @@ class LocalLogFileTests: XCTestCase {
     testFileSystemHelpers.removeLogDirectory()
   }
 
-  func testDeleteLocalLogFile() {
+  func testInit() {
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(dummyLabel))
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(config.uniqueIDString!))
+    XCTAssertNil(testLogFile.firstFileWrite)
+    XCTAssert(testLogFile.fileURL.absoluteString.contains(Bundle.main.bundleIdentifier!))
+    XCTAssert(testLogFile.fileURL.pathExtension == "log")
+  }
+  
+  func testDeleteLocalLogFileWhenItExists() {
 
     let fileURL = testFileSystemHelpers.writeDummyLogFile(
       fileName: "TestLogFileName.log")
@@ -44,97 +68,54 @@ class LocalLogFileTests: XCTestCase {
       atPath: fileURL.path, isDirectory: &isDir)
     XCTAssert(testLogFileExists == false && isDir.boolValue == false)
   }
+  
+  func testDeleteLocalLogFileWhenItDoesnExistShouldNoOp() {
+    // not yet created, should not crash
+    testLogFile.delete()
+  }
 
-  func testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference() {
+  func testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference() {
 
     let originalTestLogFileReference = testLogFile
-    testLogFile = testLogFile.trimBufferIfNecessary()
+    testLogFile = testLogFile.trimDiskImageIfNecessary()
 
     XCTAssert(testLogFile.count() == 0)
     XCTAssertTrue(originalTestLogFileReference === testLogFile)
   }
 
-  func testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles() {
+  func testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles() {
+    print("Test Log File location: \(paths)")
     _ = testFileSystemHelpers.flood(localLogFile: testLogFile)
+    _ = testFileSystemHelpers.flood(localLogFile: testLogFile)
+    
     let originalTestLogFileReference = testLogFile
-    let newTestFileLogFileReference = testLogFile.trimBufferIfNecessary()
+    let expectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      expectation.fulfill()
+    }
+    
+    wait(for: [expectation], timeout: 3)
+    
+    let newTestFileLogFileReference = testLogFile.trimDiskImageIfNecessary()
 
-    XCTAssert(newTestFileLogFileReference.count() == 0)
+    XCTAssert(newTestFileLogFileReference == nil)
     XCTAssertFalse(originalTestLogFileReference === newTestFileLogFileReference)
     XCTAssert(testFileSystemHelpers.isLogFileDirectoryEmpty())
   }
 
-  func testAppendToExistingLocalLogFileShouldAppendFile() {
-    guard let fileURL = testLogFile.fileURL else {
-      XCTFail()
-      return
-    }
-
-    guard
-      let sampleLoggedString = testFileSystemHelpers.flood(
-        localLogFile: testLogFile)
-    else {
-      XCTFail("Faild to initialize buffer in testAppendToExistingLocalLogFileShouldAppendFile")
-      return
-    }
-    testLogFile.writeLogFileToDisk()
-    guard
-      let appendedLoggedString = testFileSystemHelpers.flood(
-        localLogFile: testLogFile)
-    else {
-      XCTFail("Faild to appended buffer in testAppendToExistingLocalLogFileShouldAppendFile")
-      return
-    }
-    testLogFile.writeLogFileToDisk()
-
-    do {
-      let textRead = try String(contentsOf: fileURL)
-      XCTAssert(textRead == sampleLoggedString + appendedLoggedString)
-    } catch {
-      XCTFail(
-        "Unable to read the written text file in testtFirstWriteOfLocalFileShouldWriteFileData()")
-    }
-  }
-
-  func testtFirstWriteOfLocalFileShouldWriteFileData() {
-    guard let fileURL = testLogFile.fileURL else {
-      XCTFail()
-      return
-    }
-
-    let sampleLoggedString = testFileSystemHelpers.flood(
-      localLogFile: testLogFile)
-    testLogFile.writeLogFileToDisk()
-
-    guard sampleLoggedString != nil else {
-      XCTFail("Faild to initialize buffer in testtFirstWriteOfLocalFileShouldWriteFileData")
-      return
-    }
-    do {
-      let textRead = try String(contentsOf: fileURL)
-      XCTAssert(textRead == sampleLoggedString)
-    } catch {
-      XCTFail(
-        "Unable to read the written text file in testtFirstWriteOfLocalFileShouldWriteFileData()")
-    }
-  }
   //  
   static var allTests = [
-    ("testDeleteLocalLogFile", testDeleteLocalLogFile),
+    ("testInit", testInit),
+
+    ("testDeleteLocalLogFileWhenItExists", testDeleteLocalLogFileWhenItExists),
+    ("testDeleteLocalLogFileWhenItDoesnExistShouldNoOp", testDeleteLocalLogFileWhenItDoesnExistShouldNoOp),
     (
-      "testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference",
-      testTrimBufferIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference
+      "testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference",
+      testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference
     ),
     (
-      "testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles",
-      testTrimBufferIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles
-    ),
-    (
-      "testtFirstWriteOfLocalFileShouldWriteFileData", testtFirstWriteOfLocalFileShouldWriteFileData
-    ),
-    (
-      "testAppendToExistingLocalLogFileShouldAppendFile",
-      testAppendToExistingLocalLogFileShouldAppendFile
+      "testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles",
+      testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles
     ),
   ]
 }
