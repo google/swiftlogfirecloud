@@ -192,8 +192,10 @@ public class LocalLogFile {
     pendingWriteCount += 1
     dispatchIO?.write(offset: 0, data: dispatchData, queue: writeResponseQueue, ioHandler: {[weak self] done, dataRemaining, errorNo in
       
-      if done { // done can be true on failure with a nonzero errorNo, but while not successful, its not pending either.
-        self?.pendingWriteCount -= 1
+      guard let self = self else { return }
+      
+      if done && self.pendingWriteCount > 0 { // done can be true on failure with a nonzero errorNo, but while not successful, its not pending either.
+        self.pendingWriteCount -= 1
       }
 
       guard errorNo == 0 else {
@@ -201,9 +203,9 @@ public class LocalLogFile {
         return
       }
       
-      self?.firstFileWrite = self?.firstFileWrite == nil ? Date() : self?.firstFileWrite
-      self?.bytesWritten += (msg.count - (dataRemaining?.count ?? 0))
-      completion?(.success(self?.bytesWritten))
+      self.firstFileWrite = self.firstFileWrite == nil ? Date() : self.firstFileWrite
+      self.bytesWritten += (msg.count - (dataRemaining?.count ?? 0))
+      completion?(.success(self.bytesWritten))
     })
   }
   
