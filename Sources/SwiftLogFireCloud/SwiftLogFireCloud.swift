@@ -46,6 +46,12 @@ public class SwiftLogFileCloudManager {
   public func setLogToCloud(_ enabled: Bool) {
     SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud = enabled
   }
+  
+  /// Query the Cloud Loggers current setting of loggin to cloud.
+  /// - Returns: `true` when the logger is set to log to cloud, false otherise.
+  public func getLogToCloud() -> Bool {
+    return SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud ?? false
+  }
 }
 
 /// Enum for the status of logability, used by both local file logging and cloud logging capability.
