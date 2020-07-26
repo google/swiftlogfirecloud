@@ -258,6 +258,11 @@ internal class SwiftLogManager {
     impairedMessages?.append(msg)
   }
   
+  internal func forceFlushLogToCloud() {
+    queueLocalFileForCloud()
+    localLogFile = nil
+  }
+  
   /// Logs the message from the handler.
   /// - Parameter msg: message to be logged.
   internal func log(msg: String) {

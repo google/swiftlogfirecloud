@@ -22,17 +22,20 @@ public class SwiftLogFileCloudManager {
 
   /// Description LogHandler factory method type.
   public typealias LogHandlerFactory = (String) -> LogHandler
-  internal static var swiftLogFireCloud: SwiftLogFireCloud?
+  internal var logHandlers = [String:SwiftLogFireCloud]()
+  private var allLoggersLogToCloud = false
+  //internal static var swiftLogFireCloud: SwiftLogFireCloud?
 
   /// Called when bootstrapping the logging system with the SwiftLogFireCloud handler.
   /// - Parameter config: SwiftLogFireCloudConfig object for configuring the logger.
   /// - Returns: returns a function that makes a LogHandler.
   public func makeLogHandlerFactory(config: SwiftLogFireCloudConfig) -> LogHandlerFactory {
+    allLoggersLogToCloud = config.logToCloud
     func makeLogHandler(label: String) -> LogHandler {
-      SwiftLogFileCloudManager.swiftLogFireCloud = SwiftLogFireCloud(label: label, config: config)
+      logHandlers[label] = SwiftLogFireCloud(label: label, config: config)
       // SwiftLogFireCloud can't return nil
       // swift-format-ignore: NeverForceUnwrap
-      return SwiftLogFileCloudManager.swiftLogFireCloud!
+      return logHandlers[label]!
     }
     return makeLogHandler
   }
@@ -44,13 +47,22 @@ public class SwiftLogFileCloudManager {
   /// Allows client apps to control when to log to cloud programatically after the logger is created (to turn it off, for example)
   /// - Parameter enabled: boolean when true turns cloud logging on, when false turns it off.
   public func setLogToCloud(_ enabled: Bool) {
-    SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud = enabled
+    allLoggersLogToCloud = enabled
+    for (_, handler) in logHandlers {
+      handler.config.logToCloud = allLoggersLogToCloud
+    }
   }
   
   /// Query the Cloud Loggers current setting of loggin to cloud.
   /// - Returns: `true` when the logger is set to log to cloud, false otherise.
   public func getLogToCloud() -> Bool {
-    return SwiftLogFileCloudManager.swiftLogFireCloud?.config.logToCloud ?? false
+    return allLoggersLogToCloud
+  }
+  
+  public func flushLoggersToCloud() {
+    for (_, handler) in logHandlers {
+      handler.localFileLogManager.forceFlushLogToCloud()
+    }
   }
 }
 
@@ -66,7 +78,7 @@ internal class SwiftLogFireCloud: LogHandler {
 
   private var label: String
   internal var config: SwiftLogFireCloudConfig
-  private var localFileLogManager: SwiftLogManager
+  internal var localFileLogManager: SwiftLogManager
   private var logMessageDateFormatter = DateFormatter()
   private var logHandlerSerialQueue: DispatchQueue
   private var cloudLogFileManager: CloudLogFileManagerProtocol

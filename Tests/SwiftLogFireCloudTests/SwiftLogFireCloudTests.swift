@@ -22,16 +22,17 @@ import XCTest
 var loggerIsBootstrapped = false
 
 // Note that these tests use the actual file system, which does create some state interaction
-// between tests, but I've tried to minimize this by cleanign the file system in tear down.
-// However, this is not entire determnistic tho, as the library is async fire and forget for logging,
-// so there are time dependencies on library behaviour and the tests try to respect these without
-// any call backs (fire and forget, remember?).  For example, the processing of stranded files test
-// shortens the delay of recouping these files to 5s, and has expectations in the test to wait
-// for this processing to happen.  However, shortenign this would then have the stranded file processing'
-// recoup files that are written as the tests and checked for validity if they don't complete before
-// that stranded file processing.  So the expectation wait times here are configured to work but are
-// admittedly in a narrow time window.  I do however find the test for value utilizing the DispatchIO
-// methods as they do to in production which is why I have not abastracted away the file system for testing.
+// between tests, but I've tried to minimize this by cleaning the file system in tear down and using
+// unique log file directory names for each test. However, this is not entirely determnistic tho,
+// as the library is async fire and forget for logging, so there are time dependencies on library behaviour
+// and the tests try to respect these without any call backs (fire and forget, remember).  For example,
+// the processing of stranded files test shortens the delay of recouping these files to 5s, and has
+// expectations in the test to wait for this processing to happen.  However, shortening this would then have
+// the stranded file processing recoup files that are written as the tests and checked for validity if they
+// don't complete before that stranded file processing.  So the expectation wait times here are configured to
+// work but are admittedly in a narrow time window.  I do however find the tests having value utilizing the
+// DispatchIO methods as they do to in production which is why I have not abastracted away the file system
+// for testing.
 
 final class SwiftLogFireCloudTests: XCTestCase {
 
@@ -63,18 +64,23 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
   
 
-  func testForNoCrashOnFirstLogAndContentsContained() {
-    // if the logging system is bootstrapped correctly, this should silently just log
-    // otherwise it will crash, which is a test failure
+  func testForNoCrashOnFirstLogAndContentsContainedAndForcedToCloud() {
+    // this technically is two integration tests, one to write a log message and ensure its
+    // on disk, and 2nd to confirm it was forced to the cloud.  This is due to the fact
+    // the logger bootstrapping can only happen once.  If separated, with only one config
+    // sent to the single bootstrap, the tests of the handlers with background processing
+    // will disrupt a subsequent test.
+    
     if !loggerIsBootstrapped {
       LoggingSystem.bootstrap(swiftLogFileCloudManager.makeLogHandlerFactory(config: config))
       loggerIsBootstrapped = true
     }
-    config.cloudUploader = nil
+    fakeClientUploader.mimicSuccessUpload = true
+    let previousSuccessfulUploads = fakeClientUploader.successUploadCount
     let logger = Logger(label: "testLogger")
     let writeString = "I want this logger to do something"
 
-    logger.log(level: .info, "\(writeString)")
+    logger.info("\(writeString)")
 
     let expectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -89,6 +95,43 @@ final class SwiftLogFireCloudTests: XCTestCase {
     }
     XCTAssert(directoryContents.count == 1)
     XCTAssert(readString.contains(writeString))
+    
+    swiftLogFileCloudManager.flushLoggersToCloud()
+    
+    let cloudWriteExpectation = XCTestExpectation(description: "Wait for flushCloud to complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      cloudWriteExpectation.fulfill()
+    }
+
+    wait(for: [cloudWriteExpectation], timeout: 3)
+    
+    XCTAssert(fakeClientUploader.successUploadCount == previousSuccessfulUploads + 1)
+  }
+  
+  func testFlushToCloud() {
+    fakeClientUploader.mimicSuccessUpload = true
+    let previousSuccessfulUploads = fakeClientUploader.successUploadCount
+    let writeString = "I want this logger to do something"
+
+    handler.log(level: .info, message: "\("\(writeString)")", metadata: nil)
+
+    let expectation = XCTestExpectation(description: "Wait for DispatchIO of impl to complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      expectation.fulfill()
+    }
+
+    wait(for: [expectation], timeout: 2)
+    
+    handler.localFileLogManager.forceFlushLogToCloud()
+    
+    let cloudWriteExpectation = XCTestExpectation(description: "Wait for flushCloud to complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      cloudWriteExpectation.fulfill()
+    }
+
+    wait(for: [cloudWriteExpectation], timeout: 2)
+    
+    XCTAssert(fakeClientUploader.successUploadCount == previousSuccessfulUploads + 1)
   }
   
   func testForNoLogWrittenWhenDisabled() {
@@ -233,7 +276,8 @@ final class SwiftLogFireCloudTests: XCTestCase {
   }
 
   static var allTests = [
-    ("testForNoCrashOnFirstLogAndContentsContained", testForNoCrashOnFirstLogAndContentsContained),
+    ("testForNoCrashOnFirstLogAndContentsContainedAndForcedToCloud", testForNoCrashOnFirstLogAndContentsContainedAndForcedToCloud),
+    ("testFlushToCloud", testFlushToCloud),
     ("testForNoLogWrittenWhenDisabled", testForNoLogWrittenWhenDisabled),
     ("testForLoggingResumptionWhenReEnabled", testForLoggingResumptionWhenReEnabled),
     ("testForMultipleLoggersNotCollidingOnDisk", testForMultipleLoggersNotCollidingOnDisk),
