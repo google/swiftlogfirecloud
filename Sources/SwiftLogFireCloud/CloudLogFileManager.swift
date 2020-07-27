@@ -22,7 +22,7 @@ limitations under the License.
 ///
 /// Upon successful push of the file to the cloud, the local file is deleted.  If the upload fails,
 /// the file is not deleted and pushed to a processing queue to be pushed at a later time.
-class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClientProtocol {
+class CloudLogFileManager: CloudLogFileManagerProtocol {
 
   internal var logability: Logability = .normal
   internal var lastWriteAttempt: Date?
@@ -122,11 +122,12 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
 
   /// Pushes a  local log file to the `CloudLogFileManagerClientProtocol` object provided by the client app which manages Firebase Storage object
   /// - Parameter localLogFile: Reference to LocalLogFile with meta data about the local file on disk.
-  internal func writeLogFileToCloud(localLogFile: LocalLogFile) {
+  internal func writeLogFileToCloud(localLogFile: LocalLogFile, completion: (()->Void)? = nil) {
     cloudLogQueue.async {
       //TODO:  this probably should be rate limited since Firebase ratelimits
       guard let cloudUploader = self.config.cloudUploader else {
         localLogFile.delete()
+        completion?()
         return
       }
       if localLogFile.pendingWriteCount != 0 {
@@ -135,10 +136,11 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
         case true:
           localLogFile.pendingWriteWaitCount += 1
           self.cloudLogQueue.asyncAfter(deadline: .now() + self.pendingWriteRetryDelay) {
-            self.writeLogFileToCloud(localLogFile: localLogFile)
+            self.writeLogFileToCloud(localLogFile: localLogFile, completion: completion)
           }
         case false:
           localLogFile.delete()
+          completion?()
         }
         return
       }
@@ -152,10 +154,25 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
       let fileAttr = localLogFile.getLocalLogFileAttributes()
       if let fileSize = fileAttr.fileSize, !self.config.isTesting && fileSize == 0  {
         localLogFile.delete()
+        completion?()
         return
       }
       let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr.creationDate)
-      cloudUploader.uploadFile(self, from: localLogFile, to: cloudFilePath)
+      cloudUploader.uploadFile(from: localLogFile, to: cloudFilePath) { result in
+        switch result {
+        case .success(let logFile):
+          self.successiveFails = 0
+          self.lastWriteSuccess = Date()
+          logFile.delete()
+        case .failure(let error):
+          self.successiveFails += 1
+          switch error {
+          case .failedToUpload(let logFile):
+            self.addFileToCloudPushQueue(localLogFile: logFile)
+          }
+        }
+        completion?()
+      }
       self.lastWriteAttempt = Date()
     }
   }
@@ -213,7 +230,6 @@ class CloudLogFileManager: CloudLogFileManagerProtocol, CloudLogFileManagerClien
       case .failedToUpload(let logFile):
         addFileToCloudPushQueue(localLogFile: logFile)
       }
-      
     }
   }
   

@@ -26,16 +26,16 @@ class FakeClientCloudUploader : CloudFileUploaderProtocol {
   var successUploadURLs = [URL]()
   var failureUploadURLs = [URL]()
   
-  func uploadFile(_ cloudManager: CloudLogFileManagerClientProtocol, from localFile: LocalLogFile, to cloudPath: String) {
+  func uploadFile(from localFile: LocalLogFile, to cloudPath: String, completion: (Result<LocalLogFile, CloudUploadError>)->Void) {
     switch mimicSuccessUpload {
     case true:
       successUploadCount += 1
       successUploadURLs.append(localFile.fileURL)
-      cloudManager.reportUploadStatus(.success(localFile))
+      completion(.success(localFile))
     case false:
       failureUploadCount += 1
       failureUploadURLs.append(localFile.fileURL)
-      cloudManager.reportUploadStatus(.failure(CloudUploadError.failedToUpload(localFile)))
+      completion(.failure(CloudUploadError.failedToUpload(localFile)))
     }
   }
   

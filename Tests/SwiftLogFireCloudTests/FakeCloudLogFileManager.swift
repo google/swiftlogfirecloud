@@ -22,15 +22,13 @@ class FakeCloudLogFileManager: CloudLogFileManagerProtocol {
   var cloudPushQueue: [URL] = []
   var recentWrittenFiles: [URL] = []
 
-  func reportUploadStatus(_ result: Result<LocalLogFile, CloudUploadError>) {
-  }
-
   func isNowTheRightTimeToWriteToCloud(_ localLogFile: LocalLogFile) -> Bool {
     return true
   }
 
-  func writeLogFileToCloud(localLogFile: LocalLogFile) {
+  func writeLogFileToCloud(localLogFile: LocalLogFile, completion: (()->Void)? = nil) {
     recentWrittenFiles.append(localLogFile.fileURL)
+    completion?()
   }
   func addFileToCloudPushQueue(localLogFile: LocalLogFile) {
     cloudPushQueue.append(localLogFile.fileURL)

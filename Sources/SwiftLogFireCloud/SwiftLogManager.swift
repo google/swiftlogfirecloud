@@ -36,6 +36,7 @@ internal class SwiftLogManager {
   internal var successiveWriteFailures: Int = 0
   private let strandedFilesDelay: TimeInterval
   private var impairedMessages: Data?
+  private var backgroundTaskID = UIBackgroundTaskIdentifier.invalid
   
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
@@ -85,10 +86,28 @@ internal class SwiftLogManager {
   }
   @objc internal func appWillResignActive(_ completionForTesting: (() -> Void)? = nil) {
     localLogQueue.async {
-      //TODO: put this on a background task (ensuring priviledges exist for background processing)
-      self.queueLocalFileForCloud()
-      self.localLogFile = nil
-      completionForTesting?()
+      switch UIApplication.shared.backgroundRefreshStatus {
+      case .available:
+        self.backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "com.google.firebase.swiftlogfirecloud.willresignactive") {
+          if self.backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
+          }
+        }
+        self.forceFlushLogToCloud() {
+          if self.backgroundTaskID != .invalid {
+            UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
+          }
+        }
+      case .restricted:
+        fallthrough
+      case .denied:
+        fallthrough
+      @unknown default:
+        self.forceFlushLogToCloud {
+          completionForTesting?()
+        }
+      }
+
     }
     self.writeTimer?.invalidate()
   }
@@ -229,9 +248,9 @@ internal class SwiftLogManager {
   }
   
   /// Adds the current file for processing to the cloud.
-  internal func queueLocalFileForCloud() {
+  internal func queueLocalFileForCloud(completion: (()->Void)? = nil) {
     guard let localLogFile = self.localLogFile else { return }
-    cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFile)
+    cloudLogfileManager.writeLogFileToCloud(localLogFile: localLogFile, completion: completion)
   }
   
   /// Attemps to retry writing previously failed log messages to the local file system.
@@ -258,8 +277,8 @@ internal class SwiftLogManager {
     impairedMessages?.append(msg)
   }
   
-  internal func forceFlushLogToCloud() {
-    queueLocalFileForCloud()
+  internal func forceFlushLogToCloud(completion: (() -> Void)? = nil) {
+    queueLocalFileForCloud(completion: completion)
     localLogFile = nil
   }
   
