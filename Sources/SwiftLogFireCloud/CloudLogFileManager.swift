@@ -152,8 +152,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
       // short circuited in testing as the fileSize is always zero. While I care about not uploading
       // zero byte files in production, this check is not necessary for tests.
       let fileAttr = localLogFile.getLocalLogFileAttributes()
-//      if let fileSize = fileAttr.fileSize, !self.config.isTesting && fileSize == 0  {
-      if localLogFile.bytesWritten == 0 {
+      if let fileSize = fileAttr.fileSize, !self.config.isTesting && fileSize == 0  {
         localLogFile.delete()
         completion?()
         return

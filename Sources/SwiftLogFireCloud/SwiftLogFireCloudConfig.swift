@@ -23,7 +23,10 @@ import Foundation
 /// local file system space for temporarily holding the logs.
 public struct SwiftLogFireCloudConfig {
 
-  /// Enable to ensure log files are persisted to Firebase Cloud Storage bucket.
+  /// Enable to ensure log files are persisted to Firebase Cloud Storage bucket. Note this value works in concert with
+  /// `logToCloudOnSimulator` such that when executing on a simulator `logToCloudOnSimulator`
+  /// needs to be true as well as `logToCloud` for files to be pushed.  This allows users to default `logToCloud`
+  /// to true for the normal builds, but stop file uploading in development with `logTOCloudOnSimulator` false.
   var logToCloud: Bool
 
   /// The approximate log size when logs will be persisted to Firebase Cloud Storage bucket.
@@ -48,7 +51,9 @@ public struct SwiftLogFireCloudConfig {
   /// Directory name used for storing logs, both locally and as the root directy in the cloud storage bucket.
   var logDirectoryName: String
 
-  /// Boolean value to control whether log files are sent to the cloud when running within a simulator.
+  /// Boolean value to control whether log files are sent to the cloud when running within a simulator.  Logger will not push
+  /// to cloud when executing on a simulator even if `logToCloud` is set to `true` unless `logToCloudOnSimulator`
+  /// is also set to `true`.
   var logToCloudOnSimulator: Bool = false
 
   /// Object responsible for uploading the local log file to the cloud.
@@ -79,7 +84,8 @@ public struct SwiftLogFireCloudConfig {
     uniqueID: String? = nil,
     minFileSystemFreeSpace: Int = 20 * SwiftLogFireCloudConfig.megabyte,
     logDirectoryName: String = "Logs",
-    logToCloudOnSimulator: Bool = false, cloudUploader: CloudFileUploaderProtocol?
+    logToCloudOnSimulator: Bool = false,
+    cloudUploader: CloudFileUploaderProtocol?
   ) {
     self.logToCloud = logToCloud
     self.localFileSizeThresholdToPushToCloud = localFileSizeThresholdToPushToCloud

@@ -152,9 +152,15 @@ internal class SwiftLogFireCloud: LogHandler {
       }
       let logmsg = "\(dateString) \(metadataString) \(level): \(message.description)"
 
+      #if targetEnvironment(simulator)
+      if self.config.logToCloudOnSimulator && self.config.logToCloud {
+        self.localFileLogManager.log(msg: logmsg)
+      }
+      #else
       if self.config.logToCloud == true {
         self.localFileLogManager.log(msg: logmsg)
       }
+      #endif
 
       var printToConsole = false
       #if DEBUG
