@@ -177,7 +177,7 @@ public class LocalLogFile {
   internal func writeMessage(_ msg: Data, completion: ((Result<Int?, Error>) -> Void)? = nil) {
     
     // DispatchIO.write() appears to require a file to exist before writing to it
-    if bytesWritten == 0 {
+    if bytesWritten == 0 && pendingWriteCount == 0 {
       do {
         try "".write(to: fileURL, atomically: true, encoding: .utf8)
       } catch {
