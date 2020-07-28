@@ -21,8 +21,12 @@ class FakeCloudLogFileManager: CloudLogFileManagerProtocol {
 
   var cloudPushQueue: [URL] = []
   var recentWrittenFiles: [URL] = []
+  var isNowTheRightTimeClosure: ((Int)->Bool)? = nil
 
   func isNowTheRightTimeToWriteToCloud(_ localLogFile: LocalLogFile) -> Bool {
+    if isNowTheRightTimeClosure != nil {
+      return isNowTheRightTimeClosure!(localLogFile.bytesWritten)
+    }
     return true
   }
 

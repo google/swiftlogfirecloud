@@ -305,6 +305,65 @@ final class SwiftLogManagerTests: XCTestCase {
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
     XCTAssertFalse(localLogFileManager.isFileSystemFreeSpaceSufficient())
   }
+  
+  func testForNoDroppedMessagesBetweenLogFileRotation() {
+    // DISABLED:  This is an inherently flaky test, because when the logging manager will roll to a
+    // new file is based on performance of the machine its running on and the frequency of log messages
+    // being sent to it.  For example, before writing a new message the logging system checks to see
+    // if the bytes written is over a threshold size and then creates a new file.  But this threshold
+    // is not a hard limit because there is asynchronous latency between when bytes are written and when
+    // they are requested to be written.  For example, if the threshold is 60 bytes, it could easily
+    // occur that there are 50 bytes written and 40 bytes pending to write so the file won't roll when
+    // new messages come in until some more pending writes complete. So some amount of messages will be
+    // written above the threshold that were pending whne the threshold was met. That delay between
+    // threshold being met and how many pending writes are still outstanding
+    // is dependant on the performace processing capability of the test taget.  So the constats of 20000
+    // messages, threshold of 60 bytes and delay for writes to complete of 6s are all device specific.
+    // As such, this test is currently disabled.  But, its still a valuable test to confirm that
+    // messages are not dropped on file rotation.  As long as at least 2 files are created the the test
+    // should be a valid test so only run when necessary and on consistent hardware for the settings.
+    // Run the test individually and break just before completion to ensure enough files are created.
+    // There is arguably too much logic in this test too, but not dropping messages is important to
+    // test for, IMHO.
+    fakeCloudLogFileManager?.isNowTheRightTimeClosure = { bytesWritten in return bytesWritten > 60 }
+    for i in 1...20000 {
+      localSwiftLogManager.log(msg: "*\(i)*")
+    }
+    
+    // let all the writes complete in fire and forget...
+    let expectation = XCTestExpectation(
+      description: "testForNoDroppedMessagesBetweenFileRotation")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+      expectation.fulfill()
+    }
+    wait(for: [expectation], timeout: 6.0)
+    
+    var lastLineNumber: Int? = nil
+    var firstLineNumber: Int? = nil
+    for fileURL in testFileSystemHelpers.logFileDirectoryContents() {  // assumes a oldest first sort order, which seems to hold
+      let logFileContents = testFileSystemHelpers.readDummyLogFile(url: fileURL)
+      let lines = logFileContents?.split(separator: "\n")
+      if let firstLine = lines?.first {
+        let firstLineNumberStrList = firstLine.split(separator: "*")
+        let firstLineNumberStr = String(firstLineNumberStrList.first!)
+        firstLineNumber = Int(firstLineNumberStr)
+      }
+      switch (firstLineNumber, lastLineNumber) {
+      case (.some(_), .none): // Only one file read at this point.
+        continue
+      case (.some(let firstLineNumber), .some(let lastLineNumber)): // you're in the 2nd through last file
+        XCTAssert(lastLineNumber + 1 == firstLineNumber)
+      case (.none, _):
+        XCTFail("Logic error in test")
+      }
+      if let lastLine = lines?.last {
+        let lastLineNumberStrList = lastLine.split(separator: "*")
+        let lastLineNumberStr = String(lastLineNumberStrList.first!)
+        lastLineNumber = Int(lastLineNumberStr)
+      }
+    }
+    
+  }
 
   static var allTests = [
     ("testCreateLocalLogDirectorySuccessful", testCreateLocalLogDirectorySuccessful),
