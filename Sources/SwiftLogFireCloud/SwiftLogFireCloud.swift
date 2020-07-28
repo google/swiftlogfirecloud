@@ -97,7 +97,7 @@ internal class SwiftLogFireCloud: LogHandler {
     self.config = config
     logMessageDateFormatter.timeZone = TimeZone.current
     logMessageDateFormatter.locale = Locale(identifier: "en_US_POSIX")
-    logMessageDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.ssssZZZZZ"
+    logMessageDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ"
     logMessageDateFormatter.calendar = Calendar(identifier: .gregorian)
 
     // swift-format-ignore: NeverForceUnwrap
