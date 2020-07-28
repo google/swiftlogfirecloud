@@ -102,6 +102,47 @@ class LocalLogFileTests: XCTestCase {
     XCTAssertFalse(originalTestLogFileReference === newTestFileLogFileReference)
     XCTAssert(testFileSystemHelpers.isLogFileDirectoryEmpty())
   }
+  
+  func testForNoRaceConditionBetweenFirstWritePendingAndSubsequentLogMessage() {
+    
+    // create a separate local logfile, as larger size for this test.
+    let config = SwiftLogFireCloudConfig(
+      logToCloud: false,
+      localFileSizeThresholdToPushToCloud: 750,
+      localFileBufferWriteInterval: 60,
+      uniqueID: "TestClientID",
+      minFileSystemFreeSpace: 20,
+      logDirectoryName: "TestLogs",
+      cloudUploader: nil)
+    
+    let testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue)
+    let testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    testFileSystemHelpers.createLocalLogDirectory()
+    
+    for i in 1...15 {
+      if let data = "**\(i)**".data(using: .utf8) {
+        testLogFile.writeMessage(data)
+      } else {
+        XCTFail("Unable to convert log message string \(i) to Data" )
+      }
+    }
+
+    let expectation = XCTestExpectation(description: "Wait for DispatchIO of consequtive messages to complete")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      expectation.fulfill()
+    }
+    wait(for: [expectation], timeout: 3)
+    
+    guard let fileContents = testFileSystemHelpers.readDummyLogFile(url: testLogFile.fileURL) else { XCTFail("Unable to read test log file"); return }
+    
+    for i in 1...15 {
+      XCTAssert(fileContents.contains("**\(i)**"))
+    }
+    
+    testFileSystemHelpers.deleteAllLogFiles()
+    testFileSystemHelpers.removeLogDirectory()
+    
+  }
 
   //  
   static var allTests = [
@@ -109,13 +150,11 @@ class LocalLogFileTests: XCTestCase {
 
     ("testDeleteLocalLogFileWhenItExists", testDeleteLocalLogFileWhenItExists),
     ("testDeleteLocalLogFileWhenItDoesnExistShouldNoOp", testDeleteLocalLogFileWhenItDoesnExistShouldNoOp),
-    (
-      "testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference",
-      testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference
-    ),
-    (
-      "testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles",
-      testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles
-    ),
+    ("testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference",
+      testTrimDiskImageIfNecessaryWithEmptyBufferShouldStillBeEmptyAndSameReference),
+    ("testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles",
+      testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles),
+    ("testForNoRaceConditionBetweenFirstWritePendingAndSubsequentLogMessage",
+     testForNoRaceConditionBetweenFirstWritePendingAndSubsequentLogMessage),
   ]
 }
