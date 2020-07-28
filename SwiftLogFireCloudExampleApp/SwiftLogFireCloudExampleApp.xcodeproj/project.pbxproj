@@ -13,7 +13,6 @@
 		F644ADC624B2965D0006100B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC424B2965D0006100B /* Main.storyboard */; };
 		F644ADC824B2965F0006100B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC724B2965F0006100B /* Assets.xcassets */; };
 		F644ADCB24B2965F0006100B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F644ADC924B2965F0006100B /* LaunchScreen.storyboard */; };
-		F644ADD424B2A8240006100B /* SwiftLogFireCloud in Frameworks */ = {isa = PBXBuildFile; productRef = F644ADD324B2A8240006100B /* SwiftLogFireCloud */; };
 		F644ADD624B2BEBE0006100B /* CloudFileUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F644ADD524B2BEBE0006100B /* CloudFileUploader.swift */; };
 		F644ADD824B2C37E0006100B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F644ADD724B2C37E0006100B /* GoogleService-Info.plist */; };
 		F644AE0624B2CAF20006100B /* nanopb.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = F644ADFB24B2CAF20006100B /* nanopb.xcframework */; };
@@ -31,6 +30,7 @@
 		F644AE1E24B2CDF20006100B /* PromisesObjC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = F644ADFD24B2CAF20006100B /* PromisesObjC.xcframework */; };
 		F644AE2624B4C9580006100B /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F644AE2524B4C9580006100B /* StoreKit.framework */; };
 		F644AE2824B4C9730006100B /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F644AE2724B4C9720006100B /* libsqlite3.tbd */; };
+		F6C5679A24CFFA2C00F9C182 /* SwiftLogFireCloud in Frameworks */ = {isa = PBXBuildFile; productRef = F6C5679924CFFA2C00F9C182 /* SwiftLogFireCloud */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -71,7 +71,6 @@
 				F644AE2824B4C9730006100B /* libsqlite3.tbd in Frameworks */,
 				F644AE2624B4C9580006100B /* StoreKit.framework in Frameworks */,
 				F644AE0E24B2CAF20006100B /* GoogleDataTransport.xcframework in Frameworks */,
-				F644ADD424B2A8240006100B /* SwiftLogFireCloud in Frameworks */,
 				F644AE0C24B2CAF20006100B /* FirebaseCore.xcframework in Frameworks */,
 				F644AE1E24B2CDF20006100B /* PromisesObjC.xcframework in Frameworks */,
 				F644AE0624B2CAF20006100B /* nanopb.xcframework in Frameworks */,
@@ -82,6 +81,7 @@
 				F644AE0A24B2CAF20006100B /* FirebaseCoreDiagnostics.xcframework in Frameworks */,
 				F644AE0924B2CAF20006100B /* FirebaseAnalytics.framework in Frameworks */,
 				F644AE1A24B2CB3A0006100B /* GTMSessionFetcher.xcframework in Frameworks */,
+				F6C5679A24CFFA2C00F9C182 /* SwiftLogFireCloud in Frameworks */,
 				F644AE1024B2CAF20006100B /* GoogleUtilities.xcframework in Frameworks */,
 				F644AE1924B2CB3A0006100B /* FirebaseStorage.xcframework in Frameworks */,
 			);
@@ -188,7 +188,7 @@
 			);
 			name = SwiftLogFireCloudExampleApp;
 			packageProductDependencies = (
-				F644ADD324B2A8240006100B /* SwiftLogFireCloud */,
+				F6C5679924CFFA2C00F9C182 /* SwiftLogFireCloud */,
 			);
 			productName = SwiftLogFireCloudExampleApp;
 			productReference = F644ADBB24B2965D0006100B /* SwiftLogFireCloudExampleApp.app */;
@@ -219,7 +219,7 @@
 			);
 			mainGroup = F644ADB224B2965D0006100B;
 			packageReferences = (
-				F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */,
+				F6C5679824CFFA2C00F9C182 /* XCRemoteSwiftPackageReference "" */,
 			);
 			productRefGroup = F644ADBC24B2965D0006100B /* Products */;
 			projectDirPath = "";
@@ -465,20 +465,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */ = {
+		F6C5679824CFFA2C00F9C182 /* XCRemoteSwiftPackageReference "" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "file:///Users/timothywise/development/SwiftLogFireCloud";
+			repositoryURL = "file:///Users/timothywise/development/SwiftLogFireCloud/.git";
 			requirement = {
-				branch = ClientManagedCloudPush;
+				branch = master;
 				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		F644ADD324B2A8240006100B /* SwiftLogFireCloud */ = {
+		F6C5679924CFFA2C00F9C182 /* SwiftLogFireCloud */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F644ADD224B2A8240006100B /* XCRemoteSwiftPackageReference "SwiftLogFireCloud" */;
+			package = F6C5679824CFFA2C00F9C182 /* XCRemoteSwiftPackageReference "" */;
 			productName = SwiftLogFireCloud;
 		};
 /* End XCSwiftPackageProductDependency section */
