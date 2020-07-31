@@ -84,7 +84,7 @@ internal class SwiftLogManager {
       writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
     }
   }
-  @objc internal func appWillResignActive(_ completionForTesting: (() -> Void)? = nil) {
+  @objc internal func appWillResignActive(_ application: UIApplication, _ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
     print("BrackgroundEntitlementStatus \(backgroundEntitlementStatus.rawValue)")
 
