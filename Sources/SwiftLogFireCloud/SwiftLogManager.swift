@@ -84,7 +84,7 @@ internal class SwiftLogManager {
       writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
     }
   }
-  @objc internal func appWillResignActive(_ application: UIApplication, _ completionForTesting: (() -> Void)? = nil) {
+  @objc internal func appWillResignActive(_ application: UIApplication) { //}, _ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
     print("BrackgroundEntitlementStatus \(backgroundEntitlementStatus.rawValue)")
 
@@ -96,7 +96,7 @@ internal class SwiftLogManager {
             print("Background task expired")
             UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
           }
-          completionForTesting?()
+          //completionForTesting?()
         }
         localLogQueue.async {
           self.forceFlushLogToCloud() {
@@ -106,7 +106,7 @@ internal class SwiftLogManager {
                 UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
               }
             }
-            completionForTesting?()
+            //completionForTesting?()
           }
         }
       case .restricted:
@@ -116,7 +116,7 @@ internal class SwiftLogManager {
       @unknown default:
         localLogQueue.async {
           self.forceFlushLogToCloud {
-            completionForTesting?()
+            //completionForTesting?()
           }
         }
       }
