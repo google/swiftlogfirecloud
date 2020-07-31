@@ -87,7 +87,7 @@ internal class SwiftLogManager {
   @objc internal func appWillResignActive(_ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
     print("BrackgroundEntitlementStatus \(backgroundEntitlementStatus.rawValue)")
-    localLogQueue.async {
+
       switch backgroundEntitlementStatus {
       case .available:
         print("Starting background task")
@@ -98,24 +98,29 @@ internal class SwiftLogManager {
           }
           completionForTesting?()
         }
-        self.forceFlushLogToCloud() {
-          print("forceFlushLogToCloud completion called")
-          if self.backgroundTaskID != .invalid {
-            UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
+        localLogQueue.async {
+          self.forceFlushLogToCloud() {
+            print("forceFlushLogToCloud completion called")
+            DispatchQueue.main.async {
+              if self.backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
+              }
+            }
+            completionForTesting?()
           }
-          completionForTesting?()
         }
       case .restricted:
         fallthrough
       case .denied:
         fallthrough
       @unknown default:
-        self.forceFlushLogToCloud {
-          completionForTesting?()
+        localLogQueue.async {
+          self.forceFlushLogToCloud {
+            completionForTesting?()
+          }
         }
       }
 
-    }
     self.writeTimer?.invalidate()
   }
   
