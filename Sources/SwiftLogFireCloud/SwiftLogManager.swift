@@ -86,36 +86,34 @@ internal class SwiftLogManager {
   }
   @objc internal func appWillResignActive(_ application: UIApplication) { //}, _ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
-    print("BrackgroundEntitlementStatus \(backgroundEntitlementStatus.rawValue)")
 
-      switch backgroundEntitlementStatus {
-      case .available:
-        self.backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "com.google.firebase.swiftlogfirecloud.willresignactive") {
-          if self.backgroundTaskID != .invalid {
-            UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
-          }
-          //completionForTesting?()
+    switch backgroundEntitlementStatus {
+    case .available:
+      self.backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "com.google.firebase.swiftlogfirecloud.willresignactive") {
+        if self.backgroundTaskID != .invalid {
+          UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
         }
-        localLogQueue.async {
-          self.forceFlushLogToCloud() {
-            DispatchQueue.main.async {
-              if self.backgroundTaskID != .invalid {
-                UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
-              }
+      }
+      localLogQueue.async {  // arguably this can be done on the main thread as it resigns but worthy to be consistent too.
+        self.forceFlushLogToCloud() {
+          DispatchQueue.main.async {
+            if self.backgroundTaskID != .invalid {
+              UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
             }
           }
         }
-      case .restricted:
-        fallthrough
-      case .denied:
-        fallthrough
-      @unknown default:
-        localLogQueue.async {
-          self.forceFlushLogToCloud() {
+      }
+    case .restricted:
+      fallthrough
+    case .denied:
+      fallthrough
+    @unknown default:
+      localLogQueue.async {
+        self.forceFlushLogToCloud() {
 
-          }
         }
       }
+    }
 
     self.writeTimer?.invalidate()
   }
