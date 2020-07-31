@@ -90,23 +90,19 @@ internal class SwiftLogManager {
 
       switch backgroundEntitlementStatus {
       case .available:
-        print("Starting background task")
         self.backgroundTaskID = UIApplication.shared.beginBackgroundTask(withName: "com.google.firebase.swiftlogfirecloud.willresignactive") {
           if self.backgroundTaskID != .invalid {
-            print("Background task expired")
             UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
           }
           //completionForTesting?()
         }
         localLogQueue.async {
           self.forceFlushLogToCloud() {
-            print("forceFlushLogToCloud completion called")
             DispatchQueue.main.async {
               if self.backgroundTaskID != .invalid {
                 UIApplication.shared.endBackgroundTask(self.backgroundTaskID)
               }
             }
-            //completionForTesting?()
           }
         }
       case .restricted:
@@ -115,8 +111,8 @@ internal class SwiftLogManager {
         fallthrough
       @unknown default:
         localLogQueue.async {
-          self.forceFlushLogToCloud {
-            //completionForTesting?()
+          self.forceFlushLogToCloud() {
+
           }
         }
       }

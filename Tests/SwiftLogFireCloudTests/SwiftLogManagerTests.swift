@@ -95,7 +95,8 @@ final class SwiftLogManagerTests: XCTestCase {
 
     let expectation = XCTestExpectation(
       description: "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer")
-    localLogFileManager.appWillResignActive(UIApplication.shared) {
+    localLogFileManager.appWillResignActive(UIApplication.shared)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
       expectation.fulfill()
     }
 
