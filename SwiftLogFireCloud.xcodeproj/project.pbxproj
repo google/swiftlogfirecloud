@@ -1,0 +1,755 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		"SwiftLogFireCloud::SwiftLogFireCloudPackageTests::ProductTarget" /* SwiftLogFireCloudPackageTests */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = OBJ_66 /* Build configuration list for PBXAggregateTarget "SwiftLogFireCloudPackageTests" */;
+			buildPhases = (
+			);
+			dependencies = (
+				OBJ_69 /* PBXTargetDependency */,
+			);
+			name = SwiftLogFireCloudPackageTests;
+			productName = SwiftLogFireCloudPackageTests;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		F65EF3BC24C2554000BBE5A8 /* CloudLogFileManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65EF3BB24C2554000BBE5A8 /* CloudLogFileManagerTests.swift */; };
+		F65EF3BE24C2CCA400BBE5A8 /* FakeClientCloudUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65EF3BD24C2CCA400BBE5A8 /* FakeClientCloudUploader.swift */; };
+		OBJ_41 /* Locks.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* Locks.swift */; };
+		OBJ_42 /* LogHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* LogHandler.swift */; };
+		OBJ_43 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* Logging.swift */; };
+		OBJ_50 /* CloudLogFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CloudLogFileManager.swift */; };
+		OBJ_51 /* CloudLogFileManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CloudLogFileManagerProtocol.swift */; };
+		OBJ_52 /* LocalLogFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* LocalLogFile.swift */; };
+		OBJ_53 /* SwiftLogManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* SwiftLogManager.swift */; };
+		OBJ_54 /* SwiftLogFireCloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* SwiftLogFireCloud.swift */; };
+		OBJ_55 /* SwiftLogFireCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* SwiftLogFireCloudConfig.swift */; };
+		OBJ_57 /* Logging.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "swift-log::Logging::Product" /* Logging.framework */; };
+		OBJ_64 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_6 /* Package.swift */; };
+		OBJ_75 /* FakeCloudLogFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* FakeCloudLogFileManager.swift */; };
+		OBJ_76 /* SwiftLogManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* SwiftLogManagerTests.swift */; };
+		OBJ_77 /* LocalLogFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* LocalLogFileTests.swift */; };
+		OBJ_78 /* SwiftLogFireCloudTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* SwiftLogFireCloudTests.swift */; };
+		OBJ_79 /* TestFileSystemHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* TestFileSystemHelpers.swift */; };
+		OBJ_80 /* XCTestManifests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* XCTestManifests.swift */; };
+		OBJ_82 /* SwiftLogFireCloud.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "SwiftLogFireCloud::SwiftLogFireCloud::Product" /* SwiftLogFireCloud.framework */; };
+		OBJ_83 /* Logging.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "swift-log::Logging::Product" /* Logging.framework */; };
+		OBJ_91 /* Package.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* Package.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F644AE3424B7CD1C0006100B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = "swift-log::Logging";
+			remoteInfo = Logging;
+		};
+		F644AE3524B7CD1D0006100B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = "SwiftLogFireCloud::SwiftLogFireCloud";
+			remoteInfo = SwiftLogFireCloud;
+		};
+		F644AE3624B7CD1D0006100B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = "swift-log::Logging";
+			remoteInfo = Logging;
+		};
+		F65EF3BA24C1724C00BBE5A8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = "SwiftLogFireCloud::SwiftLogFireCloudTests";
+			remoteInfo = SwiftLogFireCloudTests;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F65EF3BB24C2554000BBE5A8 /* CloudLogFileManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudLogFileManagerTests.swift; sourceTree = "<group>"; };
+		F65EF3BD24C2CCA400BBE5A8 /* FakeClientCloudUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeClientCloudUploader.swift; sourceTree = "<group>"; };
+		OBJ_10 /* CloudLogFileManagerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudLogFileManagerProtocol.swift; sourceTree = "<group>"; };
+		OBJ_11 /* LocalLogFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLogFile.swift; sourceTree = "<group>"; };
+		OBJ_12 /* SwiftLogManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftLogManager.swift; sourceTree = "<group>"; };
+		OBJ_13 /* SwiftLogFireCloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftLogFireCloud.swift; sourceTree = "<group>"; };
+		OBJ_14 /* SwiftLogFireCloudConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftLogFireCloudConfig.swift; sourceTree = "<group>"; };
+		OBJ_17 /* FakeCloudLogFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeCloudLogFileManager.swift; sourceTree = "<group>"; };
+		OBJ_18 /* SwiftLogManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftLogManagerTests.swift; sourceTree = "<group>"; };
+		OBJ_19 /* LocalLogFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLogFileTests.swift; sourceTree = "<group>"; };
+		OBJ_20 /* SwiftLogFireCloudTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftLogFireCloudTests.swift; sourceTree = "<group>"; };
+		OBJ_21 /* TestFileSystemHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestFileSystemHelpers.swift; sourceTree = "<group>"; };
+		OBJ_22 /* XCTestManifests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XCTestManifests.swift; sourceTree = "<group>"; };
+		OBJ_26 /* Locks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Locks.swift; sourceTree = "<group>"; };
+		OBJ_27 /* LogHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogHandler.swift; sourceTree = "<group>"; };
+		OBJ_28 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
+		OBJ_29 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/timothywise/development/SwiftLogFireCloud/.build/checkouts/swift-log/Package.swift"; sourceTree = "<group>"; };
+		OBJ_34 /* SwiftLogFireCloudExampleApp */ = {isa = PBXFileReference; lastKnownFileType = folder; path = SwiftLogFireCloudExampleApp; sourceTree = SOURCE_ROOT; };
+		OBJ_35 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		OBJ_9 /* CloudLogFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudLogFileManager.swift; sourceTree = "<group>"; };
+		"SwiftLogFireCloud::SwiftLogFireCloud::Product" /* SwiftLogFireCloud.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SwiftLogFireCloud.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		"SwiftLogFireCloud::SwiftLogFireCloudTests::Product" /* SwiftLogFireCloudTests.xctest */ = {isa = PBXFileReference; lastKnownFileType = file; path = SwiftLogFireCloudTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		"swift-log::Logging::Product" /* Logging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Logging.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		OBJ_44 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_56 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_57 /* Logging.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_81 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_82 /* SwiftLogFireCloud.framework in Frameworks */,
+				OBJ_83 /* Logging.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		OBJ_15 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_16 /* SwiftLogFireCloudTests */,
+			);
+			name = Tests;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_16 /* SwiftLogFireCloudTests */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_17 /* FakeCloudLogFileManager.swift */,
+				F65EF3BD24C2CCA400BBE5A8 /* FakeClientCloudUploader.swift */,
+				OBJ_18 /* SwiftLogManagerTests.swift */,
+				OBJ_19 /* LocalLogFileTests.swift */,
+				OBJ_20 /* SwiftLogFireCloudTests.swift */,
+				OBJ_21 /* TestFileSystemHelpers.swift */,
+				OBJ_22 /* XCTestManifests.swift */,
+				F65EF3BB24C2554000BBE5A8 /* CloudLogFileManagerTests.swift */,
+			);
+			name = SwiftLogFireCloudTests;
+			path = Tests/SwiftLogFireCloudTests;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_23 /* Dependencies */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_24 /* swift-log 1.2.0 */,
+			);
+			name = Dependencies;
+			sourceTree = "<group>";
+		};
+		OBJ_24 /* swift-log 1.2.0 */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_25 /* Logging */,
+				OBJ_29 /* Package.swift */,
+			);
+			name = "swift-log 1.2.0";
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_25 /* Logging */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_26 /* Locks.swift */,
+				OBJ_27 /* LogHandler.swift */,
+				OBJ_28 /* Logging.swift */,
+			);
+			name = Logging;
+			path = ".build/checkouts/swift-log/Sources/Logging";
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_30 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				"swift-log::Logging::Product" /* Logging.framework */,
+				"SwiftLogFireCloud::SwiftLogFireCloudTests::Product" /* SwiftLogFireCloudTests.xctest */,
+				"SwiftLogFireCloud::SwiftLogFireCloud::Product" /* SwiftLogFireCloud.framework */,
+			);
+			name = Products;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		OBJ_5 = {
+			isa = PBXGroup;
+			children = (
+				OBJ_6 /* Package.swift */,
+				OBJ_7 /* Sources */,
+				OBJ_15 /* Tests */,
+				OBJ_23 /* Dependencies */,
+				OBJ_30 /* Products */,
+				OBJ_34 /* SwiftLogFireCloudExampleApp */,
+				OBJ_35 /* README.md */,
+			);
+			sourceTree = "<group>";
+		};
+		OBJ_7 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_8 /* SwiftLogFireCloud */,
+			);
+			name = Sources;
+			sourceTree = SOURCE_ROOT;
+		};
+		OBJ_8 /* SwiftLogFireCloud */ = {
+			isa = PBXGroup;
+			children = (
+				OBJ_9 /* CloudLogFileManager.swift */,
+				OBJ_10 /* CloudLogFileManagerProtocol.swift */,
+				OBJ_11 /* LocalLogFile.swift */,
+				OBJ_12 /* SwiftLogManager.swift */,
+				OBJ_13 /* SwiftLogFireCloud.swift */,
+				OBJ_14 /* SwiftLogFireCloudConfig.swift */,
+			);
+			name = SwiftLogFireCloud;
+			path = Sources/SwiftLogFireCloud;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		"SwiftLogFireCloud::SwiftLogFireCloud" /* SwiftLogFireCloud */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_46 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloud" */;
+			buildPhases = (
+				OBJ_49 /* Sources */,
+				OBJ_56 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_58 /* PBXTargetDependency */,
+			);
+			name = SwiftLogFireCloud;
+			productName = SwiftLogFireCloud;
+			productReference = "SwiftLogFireCloud::SwiftLogFireCloud::Product" /* SwiftLogFireCloud.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		"SwiftLogFireCloud::SwiftLogFireCloudTests" /* SwiftLogFireCloudTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_71 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloudTests" */;
+			buildPhases = (
+				OBJ_74 /* Sources */,
+				OBJ_81 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				OBJ_84 /* PBXTargetDependency */,
+				OBJ_85 /* PBXTargetDependency */,
+			);
+			name = SwiftLogFireCloudTests;
+			productName = SwiftLogFireCloudTests;
+			productReference = "SwiftLogFireCloud::SwiftLogFireCloudTests::Product" /* SwiftLogFireCloudTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		"SwiftLogFireCloud::SwiftPMPackageDescription" /* SwiftLogFireCloudPackageDescription */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_60 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloudPackageDescription" */;
+			buildPhases = (
+				OBJ_63 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SwiftLogFireCloudPackageDescription;
+			productName = SwiftLogFireCloudPackageDescription;
+			productType = "com.apple.product-type.framework";
+		};
+		"swift-log::Logging" /* Logging */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_37 /* Build configuration list for PBXNativeTarget "Logging" */;
+			buildPhases = (
+				OBJ_40 /* Sources */,
+				OBJ_44 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Logging;
+			productName = Logging;
+			productReference = "swift-log::Logging::Product" /* Logging.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		"swift-log::SwiftPMPackageDescription" /* swift-logPackageDescription */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = OBJ_87 /* Build configuration list for PBXNativeTarget "swift-logPackageDescription" */;
+			buildPhases = (
+				OBJ_90 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "swift-logPackageDescription";
+			productName = "swift-logPackageDescription";
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		OBJ_1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftMigration = 9999;
+				LastUpgradeCheck = 9999;
+			};
+			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "SwiftLogFireCloud" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = OBJ_5;
+			productRefGroup = OBJ_30 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				"swift-log::Logging" /* Logging */,
+				"SwiftLogFireCloud::SwiftLogFireCloud" /* SwiftLogFireCloud */,
+				"SwiftLogFireCloud::SwiftPMPackageDescription" /* SwiftLogFireCloudPackageDescription */,
+				"SwiftLogFireCloud::SwiftLogFireCloudPackageTests::ProductTarget" /* SwiftLogFireCloudPackageTests */,
+				"SwiftLogFireCloud::SwiftLogFireCloudTests" /* SwiftLogFireCloudTests */,
+				"swift-log::SwiftPMPackageDescription" /* swift-logPackageDescription */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		OBJ_40 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_41 /* Locks.swift in Sources */,
+				OBJ_42 /* LogHandler.swift in Sources */,
+				OBJ_43 /* Logging.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_49 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_50 /* CloudLogFileManager.swift in Sources */,
+				OBJ_51 /* CloudLogFileManagerProtocol.swift in Sources */,
+				OBJ_52 /* LocalLogFile.swift in Sources */,
+				OBJ_53 /* SwiftLogManager.swift in Sources */,
+				OBJ_54 /* SwiftLogFireCloud.swift in Sources */,
+				OBJ_55 /* SwiftLogFireCloudConfig.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_63 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_64 /* Package.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_75 /* FakeCloudLogFileManager.swift in Sources */,
+				F65EF3BE24C2CCA400BBE5A8 /* FakeClientCloudUploader.swift in Sources */,
+				OBJ_76 /* SwiftLogManagerTests.swift in Sources */,
+				OBJ_77 /* LocalLogFileTests.swift in Sources */,
+				OBJ_78 /* SwiftLogFireCloudTests.swift in Sources */,
+				OBJ_79 /* TestFileSystemHelpers.swift in Sources */,
+				OBJ_80 /* XCTestManifests.swift in Sources */,
+				F65EF3BC24C2554000BBE5A8 /* CloudLogFileManagerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		OBJ_90 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				OBJ_91 /* Package.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		OBJ_58 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = "swift-log::Logging" /* Logging */;
+			targetProxy = F644AE3424B7CD1C0006100B /* PBXContainerItemProxy */;
+		};
+		OBJ_69 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = "SwiftLogFireCloud::SwiftLogFireCloudTests" /* SwiftLogFireCloudTests */;
+			targetProxy = F65EF3BA24C1724C00BBE5A8 /* PBXContainerItemProxy */;
+		};
+		OBJ_84 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = "SwiftLogFireCloud::SwiftLogFireCloud" /* SwiftLogFireCloud */;
+			targetProxy = F644AE3524B7CD1D0006100B /* PBXContainerItemProxy */;
+		};
+		OBJ_85 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = "swift-log::Logging" /* Logging */;
+			targetProxy = F644AE3624B7CD1D0006100B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		OBJ_3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_NS_ASSERTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"SWIFT_PACKAGE=1",
+					"DEBUG=1",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SWIFT_PACKAGE DEBUG";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				USE_HEADERMAP = NO;
+			};
+			name = Debug;
+		};
+		OBJ_38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/Logging_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = Logging;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = Logging;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		OBJ_39 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/Logging_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = Logging;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = Logging;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		OBJ_4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"SWIFT_PACKAGE=1",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -DXcode";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = "macosx iphoneos iphonesimulator appletvos appletvsimulator watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SWIFT_PACKAGE";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				USE_HEADERMAP = NO;
+			};
+			name = Release;
+		};
+		OBJ_47 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/SwiftLogFireCloud_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftLogFireCloud;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = SwiftLogFireCloud;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		OBJ_48 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/SwiftLogFireCloud_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftLogFireCloud;
+				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = SwiftLogFireCloud;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		OBJ_61 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LD = /usr/bin/true;
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/4_2 -target x86_64-apple-macosx10.10 -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -package-description-version 5.1.0";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		OBJ_62 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LD = /usr/bin/true;
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/4_2 -target x86_64-apple-macosx10.10 -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -package-description-version 5.1.0";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		OBJ_67 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		OBJ_68 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		OBJ_72 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/SwiftLogFireCloudTests_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = SwiftLogFireCloudTests;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		OBJ_73 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_FILE = SwiftLogFireCloud.xcodeproj/SwiftLogFireCloudTests_Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TARGET_NAME = SwiftLogFireCloudTests;
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		OBJ_88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LD = /usr/bin/true;
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/4_2 -target x86_64-apple-macosx10.10 -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -package-description-version 5.0.0";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		OBJ_89 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				LD = /usr/bin/true;
+				OTHER_SWIFT_FLAGS = "-swift-version 5 -I $(TOOLCHAIN_DIR)/usr/lib/swift/pm/4_2 -target x86_64-apple-macosx10.10 -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -package-description-version 5.0.0";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		OBJ_2 /* Build configuration list for PBXProject "SwiftLogFireCloud" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_3 /* Debug */,
+				OBJ_4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_37 /* Build configuration list for PBXNativeTarget "Logging" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_38 /* Debug */,
+				OBJ_39 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_46 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloud" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_47 /* Debug */,
+				OBJ_48 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_60 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloudPackageDescription" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_61 /* Debug */,
+				OBJ_62 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_66 /* Build configuration list for PBXAggregateTarget "SwiftLogFireCloudPackageTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_67 /* Debug */,
+				OBJ_68 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_71 /* Build configuration list for PBXNativeTarget "SwiftLogFireCloudTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_72 /* Debug */,
+				OBJ_73 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		OBJ_87 /* Build configuration list for PBXNativeTarget "swift-logPackageDescription" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				OBJ_88 /* Debug */,
+				OBJ_89 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = OBJ_1 /* Project object */;
+}
