@@ -76,6 +76,7 @@ final class SwiftLogManagerTests: XCTestCase {
     XCTAssertTrue(localSwiftLogManager.writeTimer?.isValid ?? false)
   }
 
+  #if os(iOS)
   func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
 
     let config = SwiftLogFireCloudConfig(
@@ -104,6 +105,7 @@ final class SwiftLogManagerTests: XCTestCase {
     XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
     XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
   }
+  #endif
   
   func testCreateLocalLogDirectorySuccessful() {
     //Setup creates the directory, remove it first
@@ -393,10 +395,6 @@ final class SwiftLogManagerTests: XCTestCase {
     (
       "testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer",
       testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer
-    ),
-    (
-      "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer",
-      testAppWillResignActiveShouldWriteFileToCloudAndStopTimer
     ),
     (
       "testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired",

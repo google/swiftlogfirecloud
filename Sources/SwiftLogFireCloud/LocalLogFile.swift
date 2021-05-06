@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import Foundation
 #if canImport(UIKit)
   import UIKit
 #endif
@@ -90,9 +91,11 @@ public class LocalLogFile {
   /// - Returns: `String` representation of the log file name.
   private static func createLogFileName(deviceId: String?, label: String) -> String {
     var deviceIdForFileName = deviceId
+    #if os(iOS)
     if deviceId == nil || deviceId?.count == 0 {
       deviceIdForFileName = UIDevice.current.identifierForVendor?.uuidString
     }
+    #endif
     let fileDateString = LocalLogFile.dateFormatter.string(from: Date())
     let bundleString = Bundle.main.bundleIdentifier
     let versionNumber =
