@@ -42,7 +42,8 @@ public struct SwiftLogFireCloudConfig {
 
   /// An optional uniqueID string to identify the log file that is embedded in the log file name.
   ///
-  /// If omitted, the library will utlize the `UIDevice.current.identifierForVendor`  to uniquely identify the logfile
+  /// If omitted, the library will utlize the `UIDevice.current.identifierForVendor`on iOS  to uniquely identify the logfile. On macOS
+  /// if this is omitted the processInfo string is use, but its not constant across the process runs so aggregating log files is problematic.
   let uniqueIDString: String?
 
   /// Minimum required local file system space to start or continue logging.

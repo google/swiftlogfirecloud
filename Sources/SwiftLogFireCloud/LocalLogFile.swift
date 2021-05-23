@@ -73,13 +73,13 @@ public class LocalLogFile {
   ///   - label: The label used for the logger creating the log file
   ///   - config: The loggers `SwiftLogFilreCloudConfig` object, for which the local log file uses the log directory and other aspects.
   ///   - queue: The dispatch queue used for writing to the local disk.
-  init(label: String, config: SwiftLogFireCloudConfig, queue: DispatchQueue) {
+  init(label: String, config: SwiftLogFireCloudConfig, queue: DispatchQueue, tempURL: URL) {
     self.config = config
     self.label = label
     self.bufferSizeToGiveUp = 4 * config.localFileSizeThresholdToPushToCloud
     self.writeResponseQueue = queue
     self.fileURL = LocalLogFile.createLogFileURL(
-      localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString, label: label)
+      localLogDirectoryName: config.logDirectoryName, clientDeviceID: config.uniqueIDString, label: label, tempDirPath: tempURL)
   }
   
   deinit {
@@ -91,11 +91,18 @@ public class LocalLogFile {
   /// - Returns: `String` representation of the log file name.
   private static func createLogFileName(deviceId: String?, label: String) -> String {
     var deviceIdForFileName = deviceId
-    #if os(iOS)
-    if deviceId == nil || deviceId?.count == 0 {
+    
+    if deviceId == nil || deviceId?.isEmpty ?? true {
+      #if os(iOS)
       deviceIdForFileName = UIDevice.current.identifierForVendor?.uuidString
+      #elseif os(macOS)
+      // this is suboptimal, as the uniquestring changes on each get so grouping by device will be problematic
+      // if the config is not set to something sane and unique across the consuming app.  There is no equivalent
+      // identifierForVendor on macOS allegedly
+      deviceIdForFileName = ProcessInfo().globallyUniqueString
+      #endif
     }
-    #endif
+
     let fileDateString = LocalLogFile.dateFormatter.string(from: Date())
     let bundleString = Bundle.main.bundleIdentifier
     let versionNumber =
@@ -132,14 +139,13 @@ public class LocalLogFile {
   ///   - clientDeviceID: Client supplied unique identifer for the log
   ///   - label: the SwiiftLog label specified by the client
   /// - Returns: `URL` representation of the log file name.
-  private static func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?, label: String) -> URL {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+  private static func createLogFileURL(localLogDirectoryName: String, clientDeviceID: String?, label: String, tempDirPath: URL) -> URL {
 
     if localLogDirectoryName.count != 0 {
-      return paths[0].appendingPathComponent(localLogDirectoryName).appendingPathComponent(
+      return tempDirPath.appendingPathComponent(localLogDirectoryName).appendingPathComponent(
         LocalLogFile.createLogFileName(deviceId: clientDeviceID, label: label))
     } else {
-      return paths[0].appendingPathComponent(LocalLogFile.createLogFileName(deviceId: clientDeviceID, label: label))
+      return tempDirPath.appendingPathComponent(LocalLogFile.createLogFileName(deviceId: clientDeviceID, label: label))
     }
   }
 
