@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Foundation
 #if canImport(UIKit)
   import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
 #endif
 
 enum LocalLogFileError : Error {
