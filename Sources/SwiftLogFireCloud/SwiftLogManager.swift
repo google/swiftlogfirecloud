@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Foundation
 #if canImport(UIKit)
   import UIKit
 #endif
@@ -37,10 +36,7 @@ internal class SwiftLogManager {
   internal var successiveWriteFailures: Int = 0
   private let strandedFilesDelay: TimeInterval
   private var impairedMessages: Data?
-  
-  #if os(iOS)
   private var backgroundTaskID = UIBackgroundTaskIdentifier.invalid
-  #endif
   
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
@@ -63,7 +59,7 @@ internal class SwiftLogManager {
     self.strandedFilesDelay = !config.isTesting ? 15 : 5
 
     writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
-    #if os(iOS)
+
     let notificationCenter = NotificationCenter.default
     notificationCenter.addObserver(
       self, selector: #selector(appWillResignActive),
@@ -71,7 +67,7 @@ internal class SwiftLogManager {
     notificationCenter.addObserver(
       self, selector: #selector(appWillResumeActive),
       name: UIApplication.willEnterForegroundNotification, object: nil)
-    #endif
+
     //wait 15s after startup, then attempt to push any files from previous runs up to cloud
     DispatchQueue.main.asyncAfter(deadline: .now() + strandedFilesDelay) {
       self.processStrandedFilesAtStartup()
@@ -88,7 +84,6 @@ internal class SwiftLogManager {
       writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
     }
   }
-  #if os(iOS)
   @objc internal func appWillResignActive(_ application: UIApplication) { //}, _ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
     switch backgroundEntitlementStatus {
@@ -121,7 +116,6 @@ internal class SwiftLogManager {
 
     self.writeTimer?.invalidate()
   }
-  #endif
   
   private func getLocalTempDirectory() -> URL {
     #if os(iOS)

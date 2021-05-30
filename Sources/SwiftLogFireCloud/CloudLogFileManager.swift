@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import Foundation
 #if canImport(UIKit)
   import UIKit
 #endif
@@ -57,7 +56,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     pendingWriteMaxRetries = !config.isTesting ? 10 : 2
   }
 
-  private func createCloudFilePathAndName(date: Date?) -> String {
+  private func createCloundFilePathAndName(date: Date?) -> String {
     var cloudFilePath = "\(self.config.logDirectoryName)"
     if cloudFilePath.count != 0 { cloudFilePath += "/" }
 
@@ -83,11 +82,9 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
     if let deviceIDForFilename = config.uniqueIDString, deviceIDForFilename.count != 0 {
       cloudFilePath += "\(deviceIDForFilename)/"
     } else {
-      #if os(iOS)
       if let deviceID = UIDevice.current.identifierForVendor?.uuidString {
         cloudFilePath += "\(deviceID)/"
       }
-      #endif
     }
     cloudFilePath += "\(label)/"
 
@@ -160,7 +157,7 @@ class CloudLogFileManager: CloudLogFileManagerProtocol {
         completion?()
         return
       }
-      let cloudFilePath = self.createCloudFilePathAndName(date: fileAttr.creationDate)
+      let cloudFilePath = self.createCloundFilePathAndName(date: fileAttr.creationDate)
       cloudUploader.uploadFile(from: localLogFile, to: cloudFilePath) { result in
         switch result {
         case .success(let logFile):
