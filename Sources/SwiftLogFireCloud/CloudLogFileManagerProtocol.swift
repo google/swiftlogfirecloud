@@ -30,7 +30,7 @@ public enum CloudUploadError : Error {
 }
 
 /// Protocol the client object must conform to which has the Firebase Storage references and requests the upload and reports back status.
-public protocol CloudFileUploaderProtocol: class {
+public protocol CloudFileUploaderProtocol: AnyObject {
 
   func uploadFile(from localFile: LocalLogFile, to cloudPath: String, completion: @escaping (Result<LocalLogFile, CloudUploadError>)->Void)
 }

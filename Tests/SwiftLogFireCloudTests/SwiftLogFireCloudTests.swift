@@ -38,7 +38,11 @@ final class SwiftLogFireCloudTests: XCTestCase {
 
   let fakeClientUploader = FakeClientCloudUploader()
   var config: SwiftLogFireCloudConfig!
-  let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+  #if os(iOS)
+  let tempDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+  #elseif os(macOS)
+  let tempDirPath = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+  #endif
   let swiftLogFileCloudManager = SwiftLogFileCloudManager()
   var testFileSystemHelpers: TestFileSystemHelpers!
   var handler: SwiftLogFireCloud!
@@ -54,7 +58,7 @@ final class SwiftLogFireCloudTests: XCTestCase {
     handler = SwiftLogFireCloud(label: "TestSwiftLogFireCloud", config: config)
 
     swiftLogFileCloudManager.setLogToCloud(true)
-    testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    testFileSystemHelpers = TestFileSystemHelpers(config: config)
     testFileSystemHelpers.createLocalLogDirectory()
   }
 

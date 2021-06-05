@@ -23,6 +23,7 @@ class CloudLogFileManagerTests: XCTestCase {
   var cloudManager: CloudLogFileManager!
   var fakeClientCloudUploader: FakeClientCloudUploader!
   var localLogFile: LocalLogFile!
+  var testFileHelpers: TestFileSystemHelpers!
   
   override func setUpWithError() throws {
     fakeClientCloudUploader = FakeClientCloudUploader()
@@ -36,9 +37,11 @@ class CloudLogFileManagerTests: XCTestCase {
                                          cloudUploader: fakeClientCloudUploader)
 
     cloudManager = CloudLogFileManager(label: "SwiftLogFireCloud", config: config)
+    testFileHelpers = TestFileSystemHelpers(config: config)
     localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                 config: config,
-                                queue: DispatchQueue(label: "TestQueue"))
+                                queue: DispatchQueue(label: "TestQueue"),
+                                tempURL: testFileHelpers.tempDirPath)
   }
 
   override func tearDownWithError() throws {
@@ -50,7 +53,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssert(result)
@@ -61,7 +65,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -31)
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud - 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssertFalse(result)
@@ -72,7 +77,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.lastWriteAttempt = Date(timeIntervalSinceNow: -190)
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssert(result)
@@ -83,7 +89,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.successiveFails = 5
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssertFalse(result)
@@ -94,7 +101,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.successiveFails = 12
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssertFalse(result)
@@ -105,7 +113,8 @@ class CloudLogFileManagerTests: XCTestCase {
     cloudManager.successiveFails = 12
     let localLogFile = LocalLogFile(label: "SwiftLogFireCloud",
                                    config: config,
-                                   queue: DispatchQueue(label: "TestQueue"))
+                                   queue: DispatchQueue(label: "TestQueue"),
+                                   tempURL: testFileHelpers.tempDirPath)
     localLogFile.bytesWritten = config.localFileSizeThresholdToPushToCloud + 10
     let result = cloudManager.isNowTheRightTimeToWriteToCloud(localLogFile)
     XCTAssert(result)

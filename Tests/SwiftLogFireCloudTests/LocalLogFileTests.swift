@@ -28,18 +28,18 @@ class LocalLogFileTests: XCTestCase {
     minFileSystemFreeSpace: 20,
     logDirectoryName: "TestLogs",
     cloudUploader: nil)
-  let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+
+  var tempDirPath: URL!
   var testLogFile: LocalLogFile!
   var testFileSystemHelpers: TestFileSystemHelpers!
   let dummyLabel = "LocalLogFileDirectWriting"
   let localLogFileTestsQueue = DispatchQueue(label: "com.google.firebase.swiftlogfirecloud.locallogfiletests")
 
   override func setUpWithError() throws {
-    
-    testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue)
-    testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    testFileSystemHelpers = TestFileSystemHelpers( config: config)
+    tempDirPath = testFileSystemHelpers.tempDirPath
+    testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue, tempURL: tempDirPath)
     testFileSystemHelpers.createLocalLogDirectory()
-
   }
 
   override func tearDownWithError() throws {
@@ -84,7 +84,7 @@ class LocalLogFileTests: XCTestCase {
   }
 
   func testTrimImageIfNecessaryWithOverflowingBufferShouldResetBufferAndDeleteFiles() {
-    print("Test Log File location: \(paths)")
+    print("Test Log File location: \(String(describing: tempDirPath))")
     _ = testFileSystemHelpers.flood(localLogFile: testLogFile)
     _ = testFileSystemHelpers.flood(localLogFile: testLogFile)
     
@@ -115,8 +115,8 @@ class LocalLogFileTests: XCTestCase {
       logDirectoryName: "TestLogs",
       cloudUploader: nil)
     
-    let testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue)
-    let testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    let testLogFile = LocalLogFile(label: dummyLabel, config: config, queue: localLogFileTestsQueue, tempURL: testFileSystemHelpers.tempDirPath)
+    let testFileSystemHelpers = TestFileSystemHelpers(config: config)
     testFileSystemHelpers.createLocalLogDirectory()
     
     for i in 1...15 {

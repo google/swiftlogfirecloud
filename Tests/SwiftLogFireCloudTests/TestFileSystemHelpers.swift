@@ -21,11 +21,16 @@ import XCTest
 
 class TestFileSystemHelpers {
 
-  let path: URL
+  let tempDirPath: URL = {
+    #if os(iOS)
+    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    #elseif os(macOS)
+    return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+    #endif
+  }()
   let config: SwiftLogFireCloudConfig
 
-  init(path: URL, config: SwiftLogFireCloudConfig) {
-    self.path = path
+  init(config: SwiftLogFireCloudConfig) {
     self.config = config
   }
   
@@ -52,7 +57,7 @@ class TestFileSystemHelpers {
   }
 
   internal func removeLogDirectory() {
-    var documentsDirectory = path
+    var documentsDirectory = tempDirPath
     documentsDirectory.appendPathComponent(config.logDirectoryName)
 
     var isDir: ObjCBool = false
@@ -70,9 +75,8 @@ class TestFileSystemHelpers {
 
   internal func createLocalLogDirectory() {
     guard config.logDirectoryName.count > 0 else { return }
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
 
-    let pathURL = paths[0].appendingPathComponent(config.logDirectoryName)
+    let pathURL = tempDirPath.appendingPathComponent(config.logDirectoryName)
     do {
       try FileManager.default.createDirectory(
         at: pathURL, withIntermediateDirectories: true, attributes: nil)
@@ -85,7 +89,7 @@ class TestFileSystemHelpers {
     -> URL
   {
     let data = "I am test data for a about to be deleted file".data(using: .utf8)
-    let fileURL = path.appendingPathComponent(config.logDirectoryName).appendingPathComponent(
+    let fileURL = tempDirPath.appendingPathComponent(config.logDirectoryName).appendingPathComponent(
       fileName)
 
     do {
@@ -98,7 +102,7 @@ class TestFileSystemHelpers {
   }
   
   internal func readDummyLogFile(fileName: String) -> String? {
-    let fileURL = path.appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
+    let fileURL = tempDirPath.appendingPathComponent(config.logDirectoryName).appendingPathComponent(fileName)
     
      return readDummyLogFile(url: fileURL)
   }
@@ -123,7 +127,7 @@ class TestFileSystemHelpers {
   }
 
   internal func logFileDirectoryContents() -> [URL] {
-    let pathURL = path.appendingPathComponent(config.logDirectoryName)
+    let pathURL = tempDirPath.appendingPathComponent(config.logDirectoryName)
     do {
       let files = try FileManager.default.contentsOfDirectory(
         at: pathURL, includingPropertiesForKeys: nil)
@@ -137,7 +141,7 @@ class TestFileSystemHelpers {
 
   internal func deleteAllLogFiles() {
     var isDir: ObjCBool = false
-    let directoryFileURL = path.appendingPathComponent(config.logDirectoryName)
+    let directoryFileURL = tempDirPath.appendingPathComponent(config.logDirectoryName)
     guard FileManager.default.fileExists(atPath: directoryFileURL.path, isDirectory: &isDir) else {
       return
     }

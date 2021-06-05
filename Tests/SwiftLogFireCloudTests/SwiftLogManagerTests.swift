@@ -22,7 +22,7 @@ final class SwiftLogManagerTests: XCTestCase {
 
   var localSwiftLogManager: SwiftLogManager!
   var fakeCloudLogFileManager: FakeCloudLogFileManager?
-  let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+  var tempDirPath: URL!
   let config = SwiftLogFireCloudConfig(
     logToCloud: false, localFileSizeThresholdToPushToCloud: 100, localFileBufferWriteInterval: 60,
     uniqueID: "TestClientID", minFileSystemFreeSpace: 20, logDirectoryName: "TestLogs",
@@ -40,7 +40,8 @@ final class SwiftLogManagerTests: XCTestCase {
     }
     localSwiftLogManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
-    testFileSystemHelpers = TestFileSystemHelpers(path: paths[0], config: config)
+    testFileSystemHelpers = TestFileSystemHelpers(config: config)
+    tempDirPath = testFileSystemHelpers.tempDirPath
     testFileSystemHelpers.createLocalLogDirectory()
   }
 
@@ -76,6 +77,7 @@ final class SwiftLogManagerTests: XCTestCase {
     XCTAssertTrue(localSwiftLogManager.writeTimer?.isValid ?? false)
   }
 
+  #if os(iOS)
   func testAppWillResignActiveShouldWriteFileToCloudAndStopTimer() {
 
     let config = SwiftLogFireCloudConfig(
@@ -86,7 +88,7 @@ final class SwiftLogManagerTests: XCTestCase {
     let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
 
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue, tempURL: testFileSystemHelpers.tempDirPath)
     guard let localFileURL = localLogFileManager.localLogFile?.fileURL else {
       XCTFail("No local file created")
       return
@@ -104,6 +106,7 @@ final class SwiftLogManagerTests: XCTestCase {
     XCTAssert(fakeCloudLogFileManager.recentWrittenFiles.contains(localFileURL))
     XCTAssertFalse(localLogFileManager.writeTimer?.isValid ?? false)
   }
+  #endif
   
   func testCreateLocalLogDirectorySuccessful() {
     //Setup creates the directory, remove it first
@@ -111,9 +114,9 @@ final class SwiftLogManagerTests: XCTestCase {
 
     localSwiftLogManager.createLocalLogDirectory()
 
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    XCTAssert(paths.count > 0)
-    var documentsDirectory = paths[0]
+    let tempDirPath = testFileSystemHelpers.tempDirPath
+
+    var documentsDirectory = tempDirPath
     documentsDirectory.appendPathComponent(config.logDirectoryName)
 
     var isDir: ObjCBool = false
@@ -140,7 +143,13 @@ final class SwiftLogManagerTests: XCTestCase {
 
     var logFileURLs = Set<URL>()
     for logFile in logFiles {
+      #if os(macOS)
+        // testFileSystemHelpers writes to file:///var/folders/... while the library writes to file:///private/var/folders
+        // which are symlinks, so must collapse here to validate files are written correctly irregardless of symlinks
+        logFileURLs.insert(logFile.fileURL.resolvingSymlinksInPath())
+      #elseif os(iOS)
       logFileURLs.insert(logFile.fileURL)
+      #endif
     }
 
     XCTAssert(logFileURLs.contains(fileURL1))
@@ -199,9 +208,20 @@ final class SwiftLogManagerTests: XCTestCase {
 
     // the logger init is setup to not log to cloud, so it should just delete files.
     localLogFileManager.processStrandedFilesAtStartup {
-      XCTAssertTrue(fakeCloudLogFileManager.cloudPushQueue.contains(fileURL1))
-      XCTAssertTrue(fakeCloudLogFileManager.cloudPushQueue.contains(fileURL2))
-      XCTAssertTrue(fakeCloudLogFileManager.cloudPushQueue.count == 2)
+      
+      #if os(iOS)
+      let pushQueue = fakeCloudLogFileManager.cloudPushQueue
+      #elseif os(macOS)
+      var pushQueue: [URL] = []
+      for url in fakeCloudLogFileManager.cloudPushQueue {
+        // testFileSystemHelpers writes to file:///var/folders/... while the library writes to file:///private/var/folders
+        // which are symlinks, so must collapse here to validate files are written correctly irregardless of symlinks
+        pushQueue.append(url.resolvingSymlinksInPath())
+      }
+      #endif
+      XCTAssertTrue(pushQueue.contains(fileURL1))
+      XCTAssertTrue(pushQueue.contains(fileURL2))
+      XCTAssertTrue(pushQueue.count == 2)
 
       expectation.fulfill()
     }
@@ -217,7 +237,7 @@ final class SwiftLogManagerTests: XCTestCase {
     let fakeCloudLogFileManager = FakeCloudLogFileManager()
     let localLogFileManager = SwiftLogManager(
       label: dummyLabel, config: config, cloudLogfileManager: fakeCloudLogFileManager)
-    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localLogFileManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue, tempURL: testFileSystemHelpers.tempDirPath)
     let logability = localLogFileManager.assessLocalLogability()
 
     XCTAssert(logability == .impaired)
@@ -239,7 +259,7 @@ final class SwiftLogManagerTests: XCTestCase {
       XCTFail()
       return
     }
-    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue, tempURL: testFileSystemHelpers.tempDirPath)
     localSwiftLogManager.lastFileWriteAttempt = Date()
 
     localSwiftLogManager.lastFileWrite = Date(timeInterval: -900, since: Date())
@@ -261,7 +281,7 @@ final class SwiftLogManagerTests: XCTestCase {
       XCTFail()
       return
     }
-    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue)
+    localSwiftLogManager.localLogFile = LocalLogFile(label: "test", config: config, queue: queue, tempURL: testFileSystemHelpers.tempDirPath)
     localSwiftLogManager.lastFileWriteAttempt = Date()
 
     localSwiftLogManager.successiveWriteFailures = 120
@@ -393,10 +413,6 @@ final class SwiftLogManagerTests: XCTestCase {
     (
       "testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer",
       testAppWillResumeActiveWhenTimerActiveShouldStillHaveActiveTimer
-    ),
-    (
-      "testAppWillResignActiveShouldWriteFileToCloudAndStopTimer",
-      testAppWillResignActiveShouldWriteFileToCloudAndStopTimer
     ),
     (
       "testAssessLocalLogabilityWhenDiskSpaceInsufficientShouldBeImpaired",

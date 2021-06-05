@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import Foundation
 #if canImport(UIKit)
   import UIKit
 #endif
@@ -36,7 +37,10 @@ internal class SwiftLogManager {
   internal var successiveWriteFailures: Int = 0
   private let strandedFilesDelay: TimeInterval
   private var impairedMessages: Data?
+  
+  #if os(iOS)
   private var backgroundTaskID = UIBackgroundTaskIdentifier.invalid
+  #endif
   
   private func startWriteTimer(interval: TimeInterval) -> Timer {
     return Timer.scheduledTimer(
@@ -59,7 +63,7 @@ internal class SwiftLogManager {
     self.strandedFilesDelay = !config.isTesting ? 15 : 5
 
     writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
-
+    #if os(iOS)
     let notificationCenter = NotificationCenter.default
     notificationCenter.addObserver(
       self, selector: #selector(appWillResignActive),
@@ -67,15 +71,15 @@ internal class SwiftLogManager {
     notificationCenter.addObserver(
       self, selector: #selector(appWillResumeActive),
       name: UIApplication.willEnterForegroundNotification, object: nil)
-
+    #endif
     //wait 15s after startup, then attempt to push any files from previous runs up to cloud
     DispatchQueue.main.asyncAfter(deadline: .now() + strandedFilesDelay) {
       self.processStrandedFilesAtStartup()
     }
 
     #if targetEnvironment(simulator)
-      let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-      print("Log File location: \(paths[0].appendingPathComponent(config.logDirectoryName))")
+      let tempDirPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+      print("Log File location: \(tempDirPath.appendingPathComponent(config.logDirectoryName))")
     #endif
   }
 
@@ -84,6 +88,7 @@ internal class SwiftLogManager {
       writeTimer = startWriteTimer(interval: config.localFileBufferWriteInterval)
     }
   }
+  #if os(iOS)
   @objc internal func appWillResignActive(_ application: UIApplication) { //}, _ completionForTesting: (() -> Void)? = nil) {
     let backgroundEntitlementStatus = UIApplication.shared.backgroundRefreshStatus
     switch backgroundEntitlementStatus {
@@ -116,13 +121,22 @@ internal class SwiftLogManager {
 
     self.writeTimer?.invalidate()
   }
+  #endif
+  
+  private func getLocalTempDirectory() -> URL {
+    #if os(iOS)
+    return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    #elseif os(macOS)
+    return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+    #endif
+  }
   
   /// Creates the local log file directory for the logger.  If the directory already exists, this is essentially an expensive no-op.
   internal func createLocalLogDirectory() {
-    guard config.logDirectoryName.count > 0 else { return }
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    guard !config.logDirectoryName.isEmpty else { return }
+    let tempDirPath = getLocalTempDirectory()
 
-    let pathURL = paths[0].appendingPathComponent(config.logDirectoryName)
+    let pathURL = tempDirPath.appendingPathComponent(config.logDirectoryName)
     do {
       try FileManager.default.createDirectory(
         at: pathURL, withIntermediateDirectories: true, attributes: nil)
@@ -135,9 +149,9 @@ internal class SwiftLogManager {
   /// Queries the local file system for the list of files currently in the local log directory.
   /// - Returns: Array of `LocalLogFile` objects representing the files on disk.
   internal func retrieveLocalLogFileListOnDisk() -> [LocalLogFile] {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+    let tempDirPath = getLocalTempDirectory()
 
-    let pathURL = paths[0].appendingPathComponent(self.config.logDirectoryName)
+    let pathURL = tempDirPath.appendingPathComponent(self.config.logDirectoryName)
     var localLogFilesOnDisk = [LocalLogFile]()
     do {
       let files = try FileManager.default.contentsOfDirectory(
@@ -145,7 +159,7 @@ internal class SwiftLogManager {
       )
       .filter { $0.pathExtension == "log" }
       for file in files {
-        let logFileOnDisk = LocalLogFile(label: label, config: config, queue: localLogQueue)
+        let logFileOnDisk = LocalLogFile(label: label, config: config, queue: localLogQueue, tempURL: getLocalTempDirectory())
         logFileOnDisk.fileURL = file
         let attr = logFileOnDisk.getLocalLogFileAttributes()
         if let fileSize = attr.fileSize {
@@ -299,7 +313,7 @@ internal class SwiftLogManager {
       }
       
       if self.localLogFile == nil {
-        self.localLogFile = LocalLogFile(label: self.label, config: self.config, queue: self.localLogQueue)
+        self.localLogFile = LocalLogFile(label: self.label, config: self.config, queue: self.localLogQueue, tempURL: self.getLocalTempDirectory())
       }
       let logability = self.assessLocalLogability()
       
